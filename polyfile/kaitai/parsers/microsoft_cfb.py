@@ -8,7 +8,9 @@ from enum import Enum
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class MicrosoftCfb(KaitaiStruct):
     SEQ_FIELDS = ["header"]
@@ -36,12 +38,15 @@ class MicrosoftCfb(KaitaiStruct):
             self._debug['signature']['start'] = self._io.pos()
             self.signature = self._io.read_bytes(8)
             self._debug['signature']['end'] = self._io.pos()
-            if not self.signature == b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1":
+            if self.signature != b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1":
                 raise kaitaistruct.ValidationNotEqualError(b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1", self.signature, self._io, u"/types/cfb_header/seq/0")
             self._debug['clsid']['start'] = self._io.pos()
             self.clsid = self._io.read_bytes(16)
             self._debug['clsid']['end'] = self._io.pos()
-            if not self.clsid == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+            if (
+                self.clsid
+                != b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            ):
                 raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self.clsid, self._io, u"/types/cfb_header/seq/1")
             self._debug['version_minor']['start'] = self._io.pos()
             self.version_minor = self._io.read_u2le()
@@ -52,7 +57,7 @@ class MicrosoftCfb(KaitaiStruct):
             self._debug['byte_order']['start'] = self._io.pos()
             self.byte_order = self._io.read_bytes(2)
             self._debug['byte_order']['end'] = self._io.pos()
-            if not self.byte_order == b"\xFE\xFF":
+            if self.byte_order != b"\xFE\xFF":
                 raise kaitaistruct.ValidationNotEqualError(b"\xFE\xFF", self.byte_order, self._io, u"/types/cfb_header/seq/4")
             self._debug['sector_shift']['start'] = self._io.pos()
             self.sector_shift = self._io.read_u2le()
@@ -93,7 +98,7 @@ class MicrosoftCfb(KaitaiStruct):
             self._debug['difat']['start'] = self._io.pos()
             self.difat = [None] * (109)
             for i in range(109):
-                if not 'arr' in self._debug['difat']:
+                if 'arr' not in self._debug['difat']:
                     self._debug['difat']['arr'] = []
                 self._debug['difat']['arr'].append({'start': self._io.pos()})
                 self.difat[i] = self._io.read_s4le()
@@ -115,7 +120,7 @@ class MicrosoftCfb(KaitaiStruct):
             self.entries = []
             i = 0
             while not self._io.is_eof():
-                if not 'arr' in self._debug['entries']:
+                if 'arr' not in self._debug['entries']:
                     self._debug['entries']['arr'] = []
                 self._debug['entries']['arr'].append({'start': self._io.pos()})
                 self.entries.append(self._io.read_s4le())

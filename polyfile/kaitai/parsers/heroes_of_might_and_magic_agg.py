@@ -7,7 +7,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class HeroesOfMightAndMagicAgg(KaitaiStruct):
     """
@@ -28,7 +30,7 @@ class HeroesOfMightAndMagicAgg(KaitaiStruct):
         self._debug['entries']['start'] = self._io.pos()
         self.entries = [None] * (self.num_files)
         for i in range(self.num_files):
-            if not 'arr' in self._debug['entries']:
+            if 'arr' not in self._debug['entries']:
                 self._debug['entries']['arr'] = []
             self._debug['entries']['arr'].append({'start': self._io.pos()})
             _t_entries = HeroesOfMightAndMagicAgg.Entry(self._io, self, self._root)
@@ -99,7 +101,7 @@ class HeroesOfMightAndMagicAgg(KaitaiStruct):
         self._raw__m_filenames = [None] * (self.num_files)
         self._m_filenames = [None] * (self.num_files)
         for i in range(self.num_files):
-            if not 'arr' in self._debug['_m_filenames']:
+            if 'arr' not in self._debug['_m_filenames']:
                 self._debug['_m_filenames']['arr'] = []
             self._debug['_m_filenames']['arr'].append({'start': self._io.pos()})
             self._raw__m_filenames[i] = self._io.read_bytes(15)

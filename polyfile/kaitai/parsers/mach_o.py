@@ -8,7 +8,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 from polyfile.kaitai.parsers import asn1_der
 class MachO(KaitaiStruct):
@@ -152,7 +154,7 @@ class MachO(KaitaiStruct):
         self._debug['load_commands']['start'] = self._io.pos()
         self.load_commands = [None] * (self.header.ncmds)
         for i in range(self.header.ncmds):
-            if not 'arr' in self._debug['load_commands']:
+            if 'arr' not in self._debug['load_commands']:
                 self._debug['load_commands']['arr'] = []
             self._debug['load_commands']['arr'].append({'start': self._io.pos()})
             _t_load_commands = MachO.LoadCommand(self._io, self, self._root)
@@ -423,7 +425,7 @@ class MachO(KaitaiStruct):
                 self._debug['_m_hashes']['start'] = self._io.pos()
                 self._m_hashes = [None] * ((self.n_special_slots + self.n_code_slots))
                 for i in range((self.n_special_slots + self.n_code_slots)):
-                    if not 'arr' in self._debug['_m_hashes']:
+                    if 'arr' not in self._debug['_m_hashes']:
                         self._debug['_m_hashes']['arr'] = []
                     self._debug['_m_hashes']['arr'].append({'start': self._io.pos()})
                     self._m_hashes[i] = self._io.read_bytes(self.hash_size)
@@ -469,7 +471,7 @@ class MachO(KaitaiStruct):
                 self._debug['blobs']['start'] = self._io.pos()
                 self.blobs = [None] * (self.count)
                 for i in range(self.count):
-                    if not 'arr' in self._debug['blobs']:
+                    if 'arr' not in self._debug['blobs']:
                         self._debug['blobs']['arr'] = []
                     self._debug['blobs']['arr'].append({'start': self._io.pos()})
                     _t_blobs = MachO.CsBlob.BlobIndex(self._io, self, self._root)
@@ -855,7 +857,7 @@ class MachO(KaitaiStruct):
                 self._debug['items']['start'] = self._io.pos()
                 self.items = [None] * (self.count)
                 for i in range(self.count):
-                    if not 'arr' in self._debug['items']:
+                    if 'arr' not in self._debug['items']:
                         self._debug['items']['arr'] = []
                     self._debug['items']['arr'].append({'start': self._io.pos()})
                     _t_items = MachO.CsBlob.RequirementsBlobIndex(self._io, self, self._root)
@@ -956,7 +958,7 @@ class MachO(KaitaiStruct):
             self._debug['tools']['start'] = self._io.pos()
             self.tools = [None] * (self.ntools)
             for i in range(self.ntools):
-                if not 'arr' in self._debug['tools']:
+                if 'arr' not in self._debug['tools']:
                     self._debug['tools']['arr'] = []
                 self._debug['tools']['arr'].append({'start': self._io.pos()})
                 _t_tools = MachO.BuildVersionCommand.BuildToolVersion(self._io, self, self._root)
@@ -1282,7 +1284,7 @@ class MachO(KaitaiStruct):
             self._debug['strings']['start'] = self._io.pos()
             self.strings = [None] * (self.num_strings)
             for i in range(self.num_strings):
-                if not 'arr' in self._debug['strings']:
+                if 'arr' not in self._debug['strings']:
                     self._debug['strings']['arr'] = []
                 self._debug['strings']['arr'].append({'start': self._io.pos()})
                 self.strings[i] = (self._io.read_bytes_term(0, False, True, True)).decode(u"utf-8")
@@ -1332,7 +1334,7 @@ class MachO(KaitaiStruct):
             self._debug['sections']['start'] = self._io.pos()
             self.sections = [None] * (self.nsects)
             for i in range(self.nsects):
-                if not 'arr' in self._debug['sections']:
+                if 'arr' not in self._debug['sections']:
                     self._debug['sections']['arr'] = []
                 self._debug['sections']['arr'].append({'start': self._io.pos()})
                 _t_sections = MachO.SegmentCommand64.Section64(self._io, self, self._root)
@@ -1401,7 +1403,7 @@ class MachO(KaitaiStruct):
                     self.items = []
                     i = 0
                     while not self._io.is_eof():
-                        if not 'arr' in self._debug['items']:
+                        if 'arr' not in self._debug['items']:
                             self._debug['items']['arr'] = []
                         self._debug['items']['arr'].append({'start': self._io.pos()})
                         _t_items = MachO.SegmentCommand64.Section64.CfString(self._io, self, self._root)
@@ -1558,7 +1560,7 @@ class MachO(KaitaiStruct):
                     self.items = []
                     i = 0
                     while not self._io.is_eof():
-                        if not 'arr' in self._debug['items']:
+                        if 'arr' not in self._debug['items']:
                             self._debug['items']['arr'] = []
                         self._debug['items']['arr'].append({'start': self._io.pos()})
                         _t_items = MachO.SegmentCommand64.Section64.EhFrameItem(self._io, self, self._root)
@@ -1583,7 +1585,7 @@ class MachO(KaitaiStruct):
                     self.items = []
                     i = 0
                     while not self._io.is_eof():
-                        if not 'arr' in self._debug['items']:
+                        if 'arr' not in self._debug['items']:
                             self._debug['items']['arr'] = []
                         self._debug['items']['arr'].append({'start': self._io.pos()})
                         self.items.append(self._io.read_u8le())
@@ -1606,7 +1608,7 @@ class MachO(KaitaiStruct):
                     self.strings = []
                     i = 0
                     while not self._io.is_eof():
-                        if not 'arr' in self._debug['strings']:
+                        if 'arr' not in self._debug['strings']:
                             self._debug['strings']['arr'] = []
                         self._debug['strings']['arr'].append({'start': self._io.pos()})
                         self.strings.append((self._io.read_bytes_term(0, False, True, True)).decode(u"ascii"))
@@ -1626,87 +1628,39 @@ class MachO(KaitaiStruct):
                 io.seek(self.offset)
                 self._debug['_m_data']['start'] = io.pos()
                 _on = self.sect_name
-                if _on == u"__objc_nlclslist":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__objc_methname":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.StringList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__nl_symbol_ptr":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__la_symbol_ptr":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__objc_selrefs":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__cstring":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.StringList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__objc_classlist":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__objc_protolist":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__objc_imageinfo":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__objc_methtype":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.StringList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__cfstring":
+                if _on == u"__cfstring":
                     self._raw__m_data = io.read_bytes(self.size)
                     _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
                     self._m_data = MachO.SegmentCommand64.Section64.CfStringList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__objc_classrefs":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__objc_protorefs":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__objc_classname":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.StringList(_io__raw__m_data, self, self._root)
-                    self._m_data._read()
-                elif _on == u"__got":
-                    self._raw__m_data = io.read_bytes(self.size)
-                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
-                    self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
                     self._m_data._read()
                 elif _on == u"__eh_frame":
                     self._raw__m_data = io.read_bytes(self.size)
                     _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
                     self._m_data = MachO.SegmentCommand64.Section64.EhFrame(_io__raw__m_data, self, self._root)
                     self._m_data._read()
-                elif _on == u"__objc_superrefs":
+                elif _on in [
+                    u"__objc_methname",
+                    u"__cstring",
+                    u"__objc_methtype",
+                    u"__objc_classname",
+                ]:
+                    self._raw__m_data = io.read_bytes(self.size)
+                    _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
+                    self._m_data = MachO.SegmentCommand64.Section64.StringList(_io__raw__m_data, self, self._root)
+                    self._m_data._read()
+                elif _on in [
+                    u"__objc_nlclslist",
+                    u"__nl_symbol_ptr",
+                    u"__la_symbol_ptr",
+                    u"__objc_selrefs",
+                    u"__objc_classlist",
+                    u"__objc_protolist",
+                    u"__objc_imageinfo",
+                    u"__objc_classrefs",
+                    u"__objc_protorefs",
+                    u"__got",
+                    u"__objc_superrefs",
+                ]:
                     self._raw__m_data = io.read_bytes(self.size)
                     _io__raw__m_data = KaitaiStream(BytesIO(self._raw__m_data))
                     self._m_data = MachO.SegmentCommand64.Section64.PointerList(_io__raw__m_data, self, self._root)
@@ -1832,7 +1786,7 @@ class MachO(KaitaiStruct):
             self._debug['_m_indirect_symbols']['start'] = io.pos()
             self._m_indirect_symbols = [None] * (self.n_indirect_syms)
             for i in range(self.n_indirect_syms):
-                if not 'arr' in self._debug['_m_indirect_symbols']:
+                if 'arr' not in self._debug['_m_indirect_symbols']:
                     self._debug['_m_indirect_symbols']['arr'] = []
                 self._debug['_m_indirect_symbols']['arr'].append({'start': io.pos()})
                 self._m_indirect_symbols[i] = io.read_u4le()
@@ -1870,7 +1824,10 @@ class MachO(KaitaiStruct):
             self._debug['flags']['start'] = self._io.pos()
             self.flags = self._io.read_u4le()
             self._debug['flags']['end'] = self._io.pos()
-            if  ((self._root.magic == MachO.MagicType.macho_be_x64) or (self._root.magic == MachO.MagicType.macho_le_x64)) :
+            if self._root.magic in [
+                MachO.MagicType.macho_be_x64,
+                MachO.MagicType.macho_le_x64,
+            ]:
                 self._debug['reserved']['start'] = self._io.pos()
                 self.reserved = self._io.read_u4le()
                 self._debug['reserved']['end'] = self._io.pos()
@@ -1978,7 +1935,10 @@ class MachO(KaitaiStruct):
             self._debug['cryptid']['start'] = self._io.pos()
             self.cryptid = self._io.read_u4le()
             self._debug['cryptid']['end'] = self._io.pos()
-            if  ((self._root.magic == MachO.MagicType.macho_be_x64) or (self._root.magic == MachO.MagicType.macho_le_x64)) :
+            if self._root.magic in [
+                MachO.MagicType.macho_be_x64,
+                MachO.MagicType.macho_le_x64,
+            ]:
                 self._debug['pad']['start'] = self._io.pos()
                 self.pad = self._io.read_u4le()
                 self._debug['pad']['end'] = self._io.pos()
@@ -2098,7 +2058,7 @@ class MachO(KaitaiStruct):
                 self.items = []
                 i = 0
                 while True:
-                    if not 'arr' in self._debug['items']:
+                    if 'arr' not in self._debug['items']:
                         self._debug['items']['arr'] = []
                     self._debug['items']['arr'].append({'start': self._io.pos()})
                     _t_items = MachO.DyldInfoCommand.RebaseData.RebaseItem(self._io, self, self._root)
@@ -2123,7 +2083,13 @@ class MachO(KaitaiStruct):
                     self._debug['opcode_and_immediate']['start'] = self._io.pos()
                     self.opcode_and_immediate = self._io.read_u1()
                     self._debug['opcode_and_immediate']['end'] = self._io.pos()
-                    if  ((self.opcode == MachO.DyldInfoCommand.RebaseData.Opcode.set_segment_and_offset_uleb) or (self.opcode == MachO.DyldInfoCommand.RebaseData.Opcode.add_address_uleb) or (self.opcode == MachO.DyldInfoCommand.RebaseData.Opcode.do_rebase_uleb_times) or (self.opcode == MachO.DyldInfoCommand.RebaseData.Opcode.do_rebase_add_address_uleb) or (self.opcode == MachO.DyldInfoCommand.RebaseData.Opcode.do_rebase_uleb_times_skipping_uleb)) :
+                    if self.opcode in [
+                        MachO.DyldInfoCommand.RebaseData.Opcode.set_segment_and_offset_uleb,
+                        MachO.DyldInfoCommand.RebaseData.Opcode.add_address_uleb,
+                        MachO.DyldInfoCommand.RebaseData.Opcode.do_rebase_uleb_times,
+                        MachO.DyldInfoCommand.RebaseData.Opcode.do_rebase_add_address_uleb,
+                        MachO.DyldInfoCommand.RebaseData.Opcode.do_rebase_uleb_times_skipping_uleb,
+                    ]:
                         self._debug['uleb']['start'] = self._io.pos()
                         self.uleb = MachO.Uleb128(self._io, self, self._root)
                         self.uleb._read()
@@ -2166,7 +2132,14 @@ class MachO(KaitaiStruct):
                 self._debug['opcode_and_immediate']['start'] = self._io.pos()
                 self.opcode_and_immediate = self._io.read_u1()
                 self._debug['opcode_and_immediate']['end'] = self._io.pos()
-                if  ((self.opcode == MachO.DyldInfoCommand.BindOpcode.set_dylib_ordinal_uleb) or (self.opcode == MachO.DyldInfoCommand.BindOpcode.set_append_sleb) or (self.opcode == MachO.DyldInfoCommand.BindOpcode.set_segment_and_offset_uleb) or (self.opcode == MachO.DyldInfoCommand.BindOpcode.add_address_uleb) or (self.opcode == MachO.DyldInfoCommand.BindOpcode.do_bind_add_address_uleb) or (self.opcode == MachO.DyldInfoCommand.BindOpcode.do_bind_uleb_times_skipping_uleb)) :
+                if self.opcode in [
+                    MachO.DyldInfoCommand.BindOpcode.set_dylib_ordinal_uleb,
+                    MachO.DyldInfoCommand.BindOpcode.set_append_sleb,
+                    MachO.DyldInfoCommand.BindOpcode.set_segment_and_offset_uleb,
+                    MachO.DyldInfoCommand.BindOpcode.add_address_uleb,
+                    MachO.DyldInfoCommand.BindOpcode.do_bind_add_address_uleb,
+                    MachO.DyldInfoCommand.BindOpcode.do_bind_uleb_times_skipping_uleb,
+                ]:
                     self._debug['uleb']['start'] = self._io.pos()
                     self.uleb = MachO.Uleb128(self._io, self, self._root)
                     self.uleb._read()
@@ -2214,7 +2187,7 @@ class MachO(KaitaiStruct):
                 self.items = []
                 i = 0
                 while not self._io.is_eof():
-                    if not 'arr' in self._debug['items']:
+                    if 'arr' not in self._debug['items']:
                         self._debug['items']['arr'] = []
                     self._debug['items']['arr'].append({'start': self._io.pos()})
                     _t_items = MachO.DyldInfoCommand.BindItem(self._io, self, self._root)
@@ -2245,7 +2218,7 @@ class MachO(KaitaiStruct):
                 self._debug['children']['start'] = self._io.pos()
                 self.children = [None] * (self.children_count)
                 for i in range(self.children_count):
-                    if not 'arr' in self._debug['children']:
+                    if 'arr' not in self._debug['children']:
                         self._debug['children']['arr'] = []
                     self._debug['children']['arr'].append({'start': self._io.pos()})
                     _t_children = MachO.DyldInfoCommand.ExportNode.Child(self._io, self, self._root)
@@ -2469,7 +2442,7 @@ class MachO(KaitaiStruct):
             self._debug['sections']['start'] = self._io.pos()
             self.sections = [None] * (self.nsects)
             for i in range(self.nsects):
-                if not 'arr' in self._debug['sections']:
+                if 'arr' not in self._debug['sections']:
                     self._debug['sections']['arr'] = []
                 self._debug['sections']['arr'].append({'start': self._io.pos()})
                 _t_sections = MachO.SegmentCommand.Section(self._io, self, self._root)
@@ -2829,7 +2802,7 @@ class MachO(KaitaiStruct):
                 self.items = []
                 i = 0
                 while True:
-                    if not 'arr' in self._debug['items']:
+                    if 'arr' not in self._debug['items']:
                         self._debug['items']['arr'] = []
                     self._debug['items']['arr'].append({'start': self._io.pos()})
                     _ = (self._io.read_bytes_term(0, False, True, False)).decode(u"utf-8")
@@ -2934,36 +2907,20 @@ class MachO(KaitaiStruct):
             self._debug['_m_symbols']['start'] = io.pos()
             self._m_symbols = [None] * (self.n_syms)
             for i in range(self.n_syms):
-                if not 'arr' in self._debug['_m_symbols']:
+                if 'arr' not in self._debug['_m_symbols']:
                     self._debug['_m_symbols']['arr'] = []
                 self._debug['_m_symbols']['arr'].append({'start': io.pos()})
                 _on = self._root.magic
-                if _on == MachO.MagicType.macho_le_x64:
-                    if not 'arr' in self._debug['_m_symbols']:
+                if _on in [MachO.MagicType.macho_le_x64, MachO.MagicType.macho_be_x64]:
+                    if 'arr' not in self._debug['_m_symbols']:
                         self._debug['_m_symbols']['arr'] = []
                     self._debug['_m_symbols']['arr'].append({'start': io.pos()})
                     _t__m_symbols = MachO.SymtabCommand.Nlist64(io, self, self._root)
                     _t__m_symbols._read()
                     self._m_symbols[i] = _t__m_symbols
                     self._debug['_m_symbols']['arr'][i]['end'] = io.pos()
-                elif _on == MachO.MagicType.macho_be_x64:
-                    if not 'arr' in self._debug['_m_symbols']:
-                        self._debug['_m_symbols']['arr'] = []
-                    self._debug['_m_symbols']['arr'].append({'start': io.pos()})
-                    _t__m_symbols = MachO.SymtabCommand.Nlist64(io, self, self._root)
-                    _t__m_symbols._read()
-                    self._m_symbols[i] = _t__m_symbols
-                    self._debug['_m_symbols']['arr'][i]['end'] = io.pos()
-                elif _on == MachO.MagicType.macho_le_x86:
-                    if not 'arr' in self._debug['_m_symbols']:
-                        self._debug['_m_symbols']['arr'] = []
-                    self._debug['_m_symbols']['arr'].append({'start': io.pos()})
-                    _t__m_symbols = MachO.SymtabCommand.Nlist(io, self, self._root)
-                    _t__m_symbols._read()
-                    self._m_symbols[i] = _t__m_symbols
-                    self._debug['_m_symbols']['arr'][i]['end'] = io.pos()
-                elif _on == MachO.MagicType.macho_be_x86:
-                    if not 'arr' in self._debug['_m_symbols']:
+                elif _on in [MachO.MagicType.macho_le_x86, MachO.MagicType.macho_be_x86]:
+                    if 'arr' not in self._debug['_m_symbols']:
                         self._debug['_m_symbols']['arr'] = []
                     self._debug['_m_symbols']['arr'].append({'start': io.pos()})
                     _t__m_symbols = MachO.SymtabCommand.Nlist(io, self, self._root)

@@ -8,7 +8,9 @@ from enum import Enum
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class Luks(KaitaiStruct):
     """Linux Unified Key Setup (LUKS) is a format specification for storing disk
@@ -42,12 +44,12 @@ class Luks(KaitaiStruct):
             self._debug['magic']['start'] = self._io.pos()
             self.magic = self._io.read_bytes(6)
             self._debug['magic']['end'] = self._io.pos()
-            if not self.magic == b"\x4C\x55\x4B\x53\xBA\xBE":
+            if self.magic != b"\x4C\x55\x4B\x53\xBA\xBE":
                 raise kaitaistruct.ValidationNotEqualError(b"\x4C\x55\x4B\x53\xBA\xBE", self.magic, self._io, u"/types/partition_header/seq/0")
             self._debug['version']['start'] = self._io.pos()
             self.version = self._io.read_bytes(2)
             self._debug['version']['end'] = self._io.pos()
-            if not self.version == b"\x00\x01":
+            if self.version != b"\x00\x01":
                 raise kaitaistruct.ValidationNotEqualError(b"\x00\x01", self.version, self._io, u"/types/partition_header/seq/1")
             self._debug['cipher_name_specification']['start'] = self._io.pos()
             self.cipher_name_specification = (self._io.read_bytes(32)).decode(u"ASCII")
@@ -79,7 +81,7 @@ class Luks(KaitaiStruct):
             self._debug['key_slots']['start'] = self._io.pos()
             self.key_slots = [None] * (8)
             for i in range(8):
-                if not 'arr' in self._debug['key_slots']:
+                if 'arr' not in self._debug['key_slots']:
                     self._debug['key_slots']['arr'] = []
                 self._debug['key_slots']['arr'].append({'start': self._io.pos()})
                 _t_key_slots = Luks.PartitionHeader.KeySlot(self._io, self, self._root)

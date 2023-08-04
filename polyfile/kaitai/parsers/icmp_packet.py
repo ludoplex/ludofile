@@ -8,7 +8,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class IcmpPacket(KaitaiStruct):
 
@@ -42,7 +44,10 @@ class IcmpPacket(KaitaiStruct):
             self.time_exceeded._read()
             self._debug['time_exceeded']['end'] = self._io.pos()
 
-        if  ((self.icmp_type == IcmpPacket.IcmpTypeEnum.echo) or (self.icmp_type == IcmpPacket.IcmpTypeEnum.echo_reply)) :
+        if self.icmp_type in [
+            IcmpPacket.IcmpTypeEnum.echo,
+            IcmpPacket.IcmpTypeEnum.echo_reply,
+        ]:
             self._debug['echo']['start'] = self._io.pos()
             self.echo = IcmpPacket.EchoMsg(self._io, self, self._root)
             self.echo._read()
@@ -117,7 +122,7 @@ class IcmpPacket(KaitaiStruct):
             self._debug['code']['start'] = self._io.pos()
             self.code = self._io.read_bytes(1)
             self._debug['code']['end'] = self._io.pos()
-            if not self.code == b"\x00":
+            if self.code != b"\x00":
                 raise kaitaistruct.ValidationNotEqualError(b"\x00", self.code, self._io, u"/types/echo_msg/seq/0")
             self._debug['checksum']['start'] = self._io.pos()
             self.checksum = self._io.read_u2be()

@@ -8,7 +8,9 @@ from enum import Enum
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class Lvm2(KaitaiStruct):
     """### Building a test file
@@ -85,7 +87,7 @@ class Lvm2(KaitaiStruct):
                     self._debug['signature']['start'] = self._io.pos()
                     self.signature = self._io.read_bytes(8)
                     self._debug['signature']['end'] = self._io.pos()
-                    if not self.signature == b"\x4C\x41\x42\x45\x4C\x4F\x4E\x45":
+                    if self.signature != b"\x4C\x41\x42\x45\x4C\x4F\x4E\x45":
                         raise kaitaistruct.ValidationNotEqualError(b"\x4C\x41\x42\x45\x4C\x4F\x4E\x45", self.signature, self._io, u"/types/physical_volume/types/label/types/label_header/seq/0")
                     self._debug['sector_number']['start'] = self._io.pos()
                     self.sector_number = self._io.read_u8le()
@@ -113,7 +115,7 @@ class Lvm2(KaitaiStruct):
                         self._debug['type_indicator']['start'] = self._io.pos()
                         self.type_indicator = self._io.read_bytes(8)
                         self._debug['type_indicator']['end'] = self._io.pos()
-                        if not self.type_indicator == b"\x4C\x56\x4D\x32\x20\x30\x30\x31":
+                        if self.type_indicator != b"\x4C\x56\x4D\x32\x20\x30\x30\x31":
                             raise kaitaistruct.ValidationNotEqualError(b"\x4C\x56\x4D\x32\x20\x30\x30\x31", self.type_indicator, self._io, u"/types/physical_volume/types/label/types/label_header/types/label_header_/seq/1")
 
 
@@ -137,7 +139,7 @@ class Lvm2(KaitaiStruct):
                     self.data_area_descriptors = []
                     i = 0
                     while True:
-                        if not 'arr' in self._debug['data_area_descriptors']:
+                        if 'arr' not in self._debug['data_area_descriptors']:
                             self._debug['data_area_descriptors']['arr'] = []
                         self._debug['data_area_descriptors']['arr'].append({'start': self._io.pos()})
                         _t_data_area_descriptors = Lvm2.PhysicalVolume.Label.VolumeHeader.DataAreaDescriptor(self._io, self, self._root)
@@ -153,7 +155,7 @@ class Lvm2(KaitaiStruct):
                     self.metadata_area_descriptors = []
                     i = 0
                     while True:
-                        if not 'arr' in self._debug['metadata_area_descriptors']:
+                        if 'arr' not in self._debug['metadata_area_descriptors']:
                             self._debug['metadata_area_descriptors']['arr'] = []
                         self._debug['metadata_area_descriptors']['arr'].append({'start': self._io.pos()})
                         _t_metadata_area_descriptors = Lvm2.PhysicalVolume.Label.VolumeHeader.MetadataAreaDescriptor(self._io, self, self._root)
@@ -264,7 +266,10 @@ class Lvm2(KaitaiStruct):
                             self._debug['signature']['start'] = self._io.pos()
                             self.signature = self._io.read_bytes(16)
                             self._debug['signature']['end'] = self._io.pos()
-                            if not self.signature == b"\x20\x4C\x56\x4D\x32\x20\x78\x5B\x35\x41\x25\x72\x30\x4E\x2A\x3E":
+                            if (
+                                self.signature
+                                != b"\x20\x4C\x56\x4D\x32\x20\x78\x5B\x35\x41\x25\x72\x30\x4E\x2A\x3E"
+                            ):
                                 raise kaitaistruct.ValidationNotEqualError(b"\x20\x4C\x56\x4D\x32\x20\x78\x5B\x35\x41\x25\x72\x30\x4E\x2A\x3E", self.signature, self._io, u"/types/physical_volume/types/label/types/volume_header/types/metadata_area/types/metadata_area_header/seq/1")
                             self._debug['version']['start'] = self._io.pos()
                             self.version = self._io.read_u4le()
@@ -279,7 +284,7 @@ class Lvm2(KaitaiStruct):
                             self.raw_location_descriptors = []
                             i = 0
                             while True:
-                                if not 'arr' in self._debug['raw_location_descriptors']:
+                                if 'arr' not in self._debug['raw_location_descriptors']:
                                     self._debug['raw_location_descriptors']['arr'] = []
                                 self._debug['raw_location_descriptors']['arr'].append({'start': self._io.pos()})
                                 _t_raw_location_descriptors = Lvm2.PhysicalVolume.Label.VolumeHeader.MetadataArea.MetadataAreaHeader.RawLocationDescriptor(self._io, self, self._root)

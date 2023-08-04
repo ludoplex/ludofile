@@ -8,7 +8,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class MacOsResourceSnd(KaitaiStruct):
     """Sound resources were introduced in Classic MacOS with the Sound Manager program.
@@ -103,7 +105,7 @@ class MacOsResourceSnd(KaitaiStruct):
             self._debug['data_formats']['start'] = self._io.pos()
             self.data_formats = [None] * (self.num_data_formats)
             for i in range(self.num_data_formats):
-                if not 'arr' in self._debug['data_formats']:
+                if 'arr' not in self._debug['data_formats']:
                     self._debug['data_formats']['arr'] = []
                 self._debug['data_formats']['arr'].append({'start': self._io.pos()})
                 _t_data_formats = MacOsResourceSnd.DataFormat(self._io, self, self._root)
@@ -124,7 +126,7 @@ class MacOsResourceSnd(KaitaiStruct):
         self._debug['sound_commands']['start'] = self._io.pos()
         self.sound_commands = [None] * (self.num_sound_commands)
         for i in range(self.num_sound_commands):
-            if not 'arr' in self._debug['sound_commands']:
+            if 'arr' not in self._debug['sound_commands']:
                 self._debug['sound_commands']['arr'] = []
             self._debug['sound_commands']['arr'].append({'start': self._io.pos()})
             _t_sound_commands = MacOsResourceSnd.SoundCommand(self._io, self, self._root)
@@ -173,7 +175,10 @@ class MacOsResourceSnd(KaitaiStruct):
                 self.num_samples = self._io.read_u4be()
                 self._debug['num_samples']['end'] = self._io.pos()
 
-            if  ((self.sound_header_type == MacOsResourceSnd.SoundHeaderType.extended) or (self.sound_header_type == MacOsResourceSnd.SoundHeaderType.compressed)) :
+            if self.sound_header_type in [
+                MacOsResourceSnd.SoundHeaderType.extended,
+                MacOsResourceSnd.SoundHeaderType.compressed,
+            ]:
                 self._debug['num_channels']['start'] = self._io.pos()
                 self.num_channels = self._io.read_u4be()
                 self._debug['num_channels']['end'] = self._io.pos()
@@ -194,7 +199,10 @@ class MacOsResourceSnd(KaitaiStruct):
             self._debug['midi_note']['start'] = self._io.pos()
             self.midi_note = self._io.read_u1()
             self._debug['midi_note']['end'] = self._io.pos()
-            if  ((self.sound_header_type == MacOsResourceSnd.SoundHeaderType.extended) or (self.sound_header_type == MacOsResourceSnd.SoundHeaderType.compressed)) :
+            if self.sound_header_type in [
+                MacOsResourceSnd.SoundHeaderType.extended,
+                MacOsResourceSnd.SoundHeaderType.compressed,
+            ]:
                 self._debug['extended_or_compressed']['start'] = self._io.pos()
                 self.extended_or_compressed = MacOsResourceSnd.ExtendedOrCompressed(self._io, self, self._root)
                 self.extended_or_compressed._read()

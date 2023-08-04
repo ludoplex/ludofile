@@ -7,7 +7,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class Hccapx(KaitaiStruct):
     """Native format of Hashcat password "recovery" utility
@@ -27,7 +29,7 @@ class Hccapx(KaitaiStruct):
         self.records = []
         i = 0
         while not self._io.is_eof():
-            if not 'arr' in self._debug['records']:
+            if 'arr' not in self._debug['records']:
                 self._debug['records']['arr'] = []
             self._debug['records']['arr'].append({'start': self._io.pos()})
             _t_records = Hccapx.HccapxRecord(self._io, self, self._root)
@@ -50,7 +52,7 @@ class Hccapx(KaitaiStruct):
             self._debug['magic']['start'] = self._io.pos()
             self.magic = self._io.read_bytes(4)
             self._debug['magic']['end'] = self._io.pos()
-            if not self.magic == b"\x48\x43\x50\x58":
+            if self.magic != b"\x48\x43\x50\x58":
                 raise kaitaistruct.ValidationNotEqualError(b"\x48\x43\x50\x58", self.magic, self._io, u"/types/hccapx_record/seq/0")
             self._debug['version']['start'] = self._io.pos()
             self.version = self._io.read_u4le()

@@ -7,7 +7,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class Iso9660(KaitaiStruct):
     """ISO9660 is standard filesystem used on read-only optical discs
@@ -46,7 +48,7 @@ class Iso9660(KaitaiStruct):
             self._debug['unused1']['start'] = self._io.pos()
             self.unused1 = self._io.read_bytes(1)
             self._debug['unused1']['end'] = self._io.pos()
-            if not self.unused1 == b"\x00":
+            if self.unused1 != b"\x00":
                 raise kaitaistruct.ValidationNotEqualError(b"\x00", self.unused1, self._io, u"/types/vol_desc_primary/seq/0")
             self._debug['system_id']['start'] = self._io.pos()
             self.system_id = (self._io.read_bytes(32)).decode(u"UTF-8")
@@ -57,7 +59,7 @@ class Iso9660(KaitaiStruct):
             self._debug['unused2']['start'] = self._io.pos()
             self.unused2 = self._io.read_bytes(8)
             self._debug['unused2']['end'] = self._io.pos()
-            if not self.unused2 == b"\x00\x00\x00\x00\x00\x00\x00\x00":
+            if self.unused2 != b"\x00\x00\x00\x00\x00\x00\x00\x00":
                 raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00", self.unused2, self._io, u"/types/vol_desc_primary/seq/3")
             self._debug['vol_space_size']['start'] = self._io.pos()
             self.vol_space_size = Iso9660.U4bi(self._io, self, self._root)
@@ -66,7 +68,10 @@ class Iso9660(KaitaiStruct):
             self._debug['unused3']['start'] = self._io.pos()
             self.unused3 = self._io.read_bytes(32)
             self._debug['unused3']['end'] = self._io.pos()
-            if not self.unused3 == b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00":
+            if (
+                self.unused3
+                != b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            ):
                 raise kaitaistruct.ValidationNotEqualError(b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", self.unused3, self._io, u"/types/vol_desc_primary/seq/5")
             self._debug['vol_set_size']['start'] = self._io.pos()
             self.vol_set_size = Iso9660.U2bi(self._io, self, self._root)
@@ -252,7 +257,7 @@ class Iso9660(KaitaiStruct):
             self._debug['magic']['start'] = self._io.pos()
             self.magic = self._io.read_bytes(5)
             self._debug['magic']['end'] = self._io.pos()
-            if not self.magic == b"\x43\x44\x30\x30\x31":
+            if self.magic != b"\x43\x44\x30\x30\x31":
                 raise kaitaistruct.ValidationNotEqualError(b"\x43\x44\x30\x30\x31", self.magic, self._io, u"/types/vol_desc/seq/1")
             self._debug['version']['start'] = self._io.pos()
             self.version = self._io.read_u1()
@@ -315,7 +320,7 @@ class Iso9660(KaitaiStruct):
             self.entries = []
             i = 0
             while True:
-                if not 'arr' in self._debug['entries']:
+                if 'arr' not in self._debug['entries']:
                     self._debug['entries']['arr'] = []
                 self._debug['entries']['arr'].append({'start': self._io.pos()})
                 _t_entries = Iso9660.DirEntry(self._io, self, self._root)
@@ -380,7 +385,7 @@ class Iso9660(KaitaiStruct):
             self.entries = []
             i = 0
             while not self._io.is_eof():
-                if not 'arr' in self._debug['entries']:
+                if 'arr' not in self._debug['entries']:
                     self._debug['entries']['arr'] = []
                 self._debug['entries']['arr'].append({'start': self._io.pos()})
                 _t_entries = Iso9660.PathTableEntryLe(self._io, self, self._root)

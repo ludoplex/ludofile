@@ -8,7 +8,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class Mcap(KaitaiStruct):
     """MCAP is a modular container format and logging library for pub/sub messages with
@@ -56,7 +58,7 @@ class Mcap(KaitaiStruct):
         self.records = []
         i = 0
         while True:
-            if not 'arr' in self._debug['records']:
+            if 'arr' not in self._debug['records']:
                 self._debug['records']['arr'] = []
             self._debug['records']['arr'].append({'start': self._io.pos()})
             _t_records = Mcap.Record(self._io, self, self._root)
@@ -225,7 +227,7 @@ class Mcap(KaitaiStruct):
                 self.entries = []
                 i = 0
                 while not self._io.is_eof():
-                    if not 'arr' in self._debug['entries']:
+                    if 'arr' not in self._debug['entries']:
                         self._debug['entries']['arr'] = []
                     self._debug['entries']['arr'].append({'start': self._io.pos()})
                     _t_entries = Mcap.MessageIndex.MessageIndexEntry(self._io, self, self._root)
@@ -294,7 +296,7 @@ class Mcap(KaitaiStruct):
                 self.entries = []
                 i = 0
                 while not self._io.is_eof():
-                    if not 'arr' in self._debug['entries']:
+                    if 'arr' not in self._debug['entries']:
                         self._debug['entries']['arr'] = []
                     self._debug['entries']['arr'].append({'start': self._io.pos()})
                     _t_entries = Mcap.Statistics.ChannelMessageCount(self._io, self, self._root)
@@ -435,7 +437,7 @@ class Mcap(KaitaiStruct):
                 self.entries = []
                 i = 0
                 while not self._io.is_eof():
-                    if not 'arr' in self._debug['entries']:
+                    if 'arr' not in self._debug['entries']:
                         self._debug['entries']['arr'] = []
                     self._debug['entries']['arr'].append({'start': self._io.pos()})
                     _t_entries = Mcap.TupleStrStr(self._io, self, self._root)
@@ -678,7 +680,7 @@ class Mcap(KaitaiStruct):
             self._debug['magic']['start'] = self._io.pos()
             self.magic = self._io.read_bytes(8)
             self._debug['magic']['end'] = self._io.pos()
-            if not self.magic == b"\x89\x4D\x43\x41\x50\x30\x0D\x0A":
+            if self.magic != b"\x89\x4D\x43\x41\x50\x30\x0D\x0A":
                 raise kaitaistruct.ValidationNotEqualError(b"\x89\x4D\x43\x41\x50\x30\x0D\x0A", self.magic, self._io, u"/types/magic/seq/0")
 
 
@@ -695,7 +697,7 @@ class Mcap(KaitaiStruct):
             self.records = []
             i = 0
             while not self._io.is_eof():
-                if not 'arr' in self._debug['records']:
+                if 'arr' not in self._debug['records']:
                     self._debug['records']['arr'] = []
                 self._debug['records']['arr'].append({'start': self._io.pos()})
                 _t_records = Mcap.Record(self._io, self, self._root)
@@ -958,7 +960,7 @@ class Mcap(KaitaiStruct):
                 self.entries = []
                 i = 0
                 while not self._io.is_eof():
-                    if not 'arr' in self._debug['entries']:
+                    if 'arr' not in self._debug['entries']:
                         self._debug['entries']['arr'] = []
                     self._debug['entries']['arr'].append({'start': self._io.pos()})
                     _t_entries = Mcap.ChunkIndex.MessageIndexOffset(self._io, self, self._root)

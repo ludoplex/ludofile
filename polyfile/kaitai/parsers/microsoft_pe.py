@@ -8,7 +8,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class MicrosoftPe(KaitaiStruct):
     """
@@ -346,7 +348,7 @@ class MicrosoftPe(KaitaiStruct):
             self._debug['pe_signature']['start'] = self._io.pos()
             self.pe_signature = self._io.read_bytes(4)
             self._debug['pe_signature']['end'] = self._io.pos()
-            if not self.pe_signature == b"\x50\x45\x00\x00":
+            if self.pe_signature != b"\x50\x45\x00\x00":
                 raise kaitaistruct.ValidationNotEqualError(b"\x50\x45\x00\x00", self.pe_signature, self._io, u"/types/pe_header/seq/0")
             self._debug['coff_hdr']['start'] = self._io.pos()
             self.coff_hdr = MicrosoftPe.CoffHeader(self._io, self, self._root)
@@ -361,7 +363,7 @@ class MicrosoftPe(KaitaiStruct):
             self._debug['sections']['start'] = self._io.pos()
             self.sections = [None] * (self.coff_hdr.number_of_sections)
             for i in range(self.coff_hdr.number_of_sections):
-                if not 'arr' in self._debug['sections']:
+                if 'arr' not in self._debug['sections']:
                     self._debug['sections']['arr'] = []
                 self._debug['sections']['arr'].append({'start': self._io.pos()})
                 _t_sections = MicrosoftPe.Section(self._io, self, self._root)
@@ -480,7 +482,7 @@ class MicrosoftPe(KaitaiStruct):
             self.items = []
             i = 0
             while not self._io.is_eof():
-                if not 'arr' in self._debug['items']:
+                if 'arr' not in self._debug['items']:
                     self._debug['items']['arr'] = []
                 self._debug['items']['arr'].append({'start': self._io.pos()})
                 _t_items = MicrosoftPe.CertificateEntry(self._io, self, self._root)
@@ -504,7 +506,7 @@ class MicrosoftPe(KaitaiStruct):
             self._debug['magic']['start'] = self._io.pos()
             self.magic = self._io.read_bytes(2)
             self._debug['magic']['end'] = self._io.pos()
-            if not self.magic == b"\x4D\x5A":
+            if self.magic != b"\x4D\x5A":
                 raise kaitaistruct.ValidationNotEqualError(b"\x4D\x5A", self.magic, self._io, u"/types/mz_placeholder/seq/0")
             self._debug['data1']['start'] = self._io.pos()
             self.data1 = self._io.read_bytes(58)
@@ -658,7 +660,7 @@ class MicrosoftPe(KaitaiStruct):
             self._debug['_m_symbol_table']['start'] = self._io.pos()
             self._m_symbol_table = [None] * (self.number_of_symbols)
             for i in range(self.number_of_symbols):
-                if not 'arr' in self._debug['_m_symbol_table']:
+                if 'arr' not in self._debug['_m_symbol_table']:
                     self._debug['_m_symbol_table']['arr'] = []
                 self._debug['_m_symbol_table']['arr'].append({'start': self._io.pos()})
                 _t__m_symbol_table = MicrosoftPe.CoffSymbol(self._io, self, self._root)

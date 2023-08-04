@@ -7,7 +7,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class HeapsPak(KaitaiStruct):
     """
@@ -39,7 +41,7 @@ class HeapsPak(KaitaiStruct):
             self._debug['magic1']['start'] = self._io.pos()
             self.magic1 = self._io.read_bytes(3)
             self._debug['magic1']['end'] = self._io.pos()
-            if not self.magic1 == b"\x50\x41\x4B":
+            if self.magic1 != b"\x50\x41\x4B":
                 raise kaitaistruct.ValidationNotEqualError(b"\x50\x41\x4B", self.magic1, self._io, u"/types/header/seq/0")
             self._debug['version']['start'] = self._io.pos()
             self.version = self._io.read_u1()
@@ -59,7 +61,7 @@ class HeapsPak(KaitaiStruct):
             self._debug['magic2']['start'] = self._io.pos()
             self.magic2 = self._io.read_bytes(4)
             self._debug['magic2']['end'] = self._io.pos()
-            if not self.magic2 == b"\x44\x41\x54\x41":
+            if self.magic2 != b"\x44\x41\x54\x41":
                 raise kaitaistruct.ValidationNotEqualError(b"\x44\x41\x54\x41", self.magic2, self._io, u"/types/header/seq/5")
 
         class Entry(KaitaiStruct):
@@ -162,7 +164,7 @@ class HeapsPak(KaitaiStruct):
                 self._debug['entries']['start'] = self._io.pos()
                 self.entries = [None] * (self.num_entries)
                 for i in range(self.num_entries):
-                    if not 'arr' in self._debug['entries']:
+                    if 'arr' not in self._debug['entries']:
                         self._debug['entries']['arr'] = []
                     self._debug['entries']['arr'].append({'start': self._io.pos()})
                     _t_entries = HeapsPak.Header.Entry(self._io, self, self._root)

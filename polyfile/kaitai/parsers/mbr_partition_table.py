@@ -7,7 +7,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class MbrPartitionTable(KaitaiStruct):
     """MBR (Master Boot Record) partition table is a traditional way of
@@ -34,7 +36,7 @@ class MbrPartitionTable(KaitaiStruct):
         self._debug['partitions']['start'] = self._io.pos()
         self.partitions = [None] * (4)
         for i in range(4):
-            if not 'arr' in self._debug['partitions']:
+            if 'arr' not in self._debug['partitions']:
                 self._debug['partitions']['arr'] = []
             self._debug['partitions']['arr'].append({'start': self._io.pos()})
             _t_partitions = MbrPartitionTable.PartitionEntry(self._io, self, self._root)
@@ -46,7 +48,7 @@ class MbrPartitionTable(KaitaiStruct):
         self._debug['boot_signature']['start'] = self._io.pos()
         self.boot_signature = self._io.read_bytes(2)
         self._debug['boot_signature']['end'] = self._io.pos()
-        if not self.boot_signature == b"\x55\xAA":
+        if self.boot_signature != b"\x55\xAA":
             raise kaitaistruct.ValidationNotEqualError(b"\x55\xAA", self.boot_signature, self._io, u"/seq/2")
 
     class PartitionEntry(KaitaiStruct):

@@ -8,7 +8,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 from polyfile.kaitai.parsers import ethernet_frame
 from polyfile.kaitai.parsers import windows_systemtime
@@ -142,7 +144,7 @@ class MicrosoftNetworkMonitorV2(KaitaiStruct):
         self._debug['signature']['start'] = self._io.pos()
         self.signature = self._io.read_bytes(4)
         self._debug['signature']['end'] = self._io.pos()
-        if not self.signature == b"\x47\x4D\x42\x55":
+        if self.signature != b"\x47\x4D\x42\x55":
             raise kaitaistruct.ValidationNotEqualError(b"\x47\x4D\x42\x55", self.signature, self._io, u"/seq/0")
         self._debug['version_minor']['start'] = self._io.pos()
         self.version_minor = self._io.read_u1()
@@ -207,7 +209,7 @@ class MicrosoftNetworkMonitorV2(KaitaiStruct):
             self.entries = []
             i = 0
             while not self._io.is_eof():
-                if not 'arr' in self._debug['entries']:
+                if 'arr' not in self._debug['entries']:
                     self._debug['entries']['arr'] = []
                 self._debug['entries']['arr'].append({'start': self._io.pos()})
                 _t_entries = MicrosoftNetworkMonitorV2.FrameIndexEntry(self._io, self, self._root)

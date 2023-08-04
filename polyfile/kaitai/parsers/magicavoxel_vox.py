@@ -8,7 +8,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 class MagicavoxelVox(KaitaiStruct):
     """
@@ -54,7 +56,7 @@ class MagicavoxelVox(KaitaiStruct):
         self._debug['magic']['start'] = self._io.pos()
         self.magic = self._io.read_bytes(4)
         self._debug['magic']['end'] = self._io.pos()
-        if not self.magic == b"\x56\x4F\x58\x20":
+        if self.magic != b"\x56\x4F\x58\x20":
             raise kaitaistruct.ValidationNotEqualError(b"\x56\x4F\x58\x20", self.magic, self._io, u"/seq/0")
         self._debug['version']['start'] = self._io.pos()
         self.version = self._io.read_u4le()
@@ -119,7 +121,7 @@ class MagicavoxelVox(KaitaiStruct):
                 self.children_chunks = []
                 i = 0
                 while not self._io.is_eof():
-                    if not 'arr' in self._debug['children_chunks']:
+                    if 'arr' not in self._debug['children_chunks']:
                         self._debug['children_chunks']['arr'] = []
                     self._debug['children_chunks']['arr'].append({'start': self._io.pos()})
                     _t_children_chunks = MagicavoxelVox.Chunk(self._io, self, self._root)
@@ -164,7 +166,7 @@ class MagicavoxelVox(KaitaiStruct):
             self._debug['colors']['start'] = self._io.pos()
             self.colors = [None] * (256)
             for i in range(256):
-                if not 'arr' in self._debug['colors']:
+                if 'arr' not in self._debug['colors']:
                     self._debug['colors']['arr'] = []
                 self._debug['colors']['arr'].append({'start': self._io.pos()})
                 _t_colors = MagicavoxelVox.Color(self._io, self, self._root)
@@ -331,7 +333,7 @@ class MagicavoxelVox(KaitaiStruct):
             self._debug['voxels']['start'] = self._io.pos()
             self.voxels = [None] * (self.num_voxels)
             for i in range(self.num_voxels):
-                if not 'arr' in self._debug['voxels']:
+                if 'arr' not in self._debug['voxels']:
                     self._debug['voxels']['arr'] = []
                 self._debug['voxels']['arr'].append({'start': self._io.pos()})
                 _t_voxels = MagicavoxelVox.Voxel(self._io, self, self._root)

@@ -8,7 +8,9 @@ import collections
 
 
 if parse_version(kaitaistruct.__version__) < parse_version('0.9'):
-    raise Exception("Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have %s" % (kaitaistruct.__version__))
+    raise Exception(
+        f"Incompatible Kaitai Struct Python API: 0.9 or later is required, but you have {kaitaistruct.__version__}"
+    )
 
 from polyfile.kaitai.parsers import exif
 class Jpeg(KaitaiStruct):
@@ -48,7 +50,7 @@ class Jpeg(KaitaiStruct):
         self.segments = []
         i = 0
         while not self._io.is_eof():
-            if not 'arr' in self._debug['segments']:
+            if 'arr' not in self._debug['segments']:
                 self._debug['segments']['arr'] = []
             self._debug['segments']['arr'].append({'start': self._io.pos()})
             _t_segments = Jpeg.Segment(self._io, self, self._root)
@@ -106,17 +108,23 @@ class Jpeg(KaitaiStruct):
             self._debug['magic']['start'] = self._io.pos()
             self.magic = self._io.read_bytes(1)
             self._debug['magic']['end'] = self._io.pos()
-            if not self.magic == b"\xFF":
+            if self.magic != b"\xFF":
                 raise kaitaistruct.ValidationNotEqualError(b"\xFF", self.magic, self._io, u"/types/segment/seq/0")
             self._debug['marker']['start'] = self._io.pos()
             self.marker = KaitaiStream.resolve_enum(Jpeg.Segment.MarkerEnum, self._io.read_u1())
             self._debug['marker']['end'] = self._io.pos()
-            if  ((self.marker != Jpeg.Segment.MarkerEnum.soi) and (self.marker != Jpeg.Segment.MarkerEnum.eoi)) :
+            if self.marker not in [
+                Jpeg.Segment.MarkerEnum.soi,
+                Jpeg.Segment.MarkerEnum.eoi,
+            ]:
                 self._debug['length']['start'] = self._io.pos()
                 self.length = self._io.read_u2be()
                 self._debug['length']['end'] = self._io.pos()
 
-            if  ((self.marker != Jpeg.Segment.MarkerEnum.soi) and (self.marker != Jpeg.Segment.MarkerEnum.eoi)) :
+            if self.marker not in [
+                Jpeg.Segment.MarkerEnum.soi,
+                Jpeg.Segment.MarkerEnum.eoi,
+            ]:
                 self._debug['data']['start'] = self._io.pos()
                 _on = self.marker
                 if _on == Jpeg.Segment.MarkerEnum.app1:
@@ -165,7 +173,7 @@ class Jpeg(KaitaiStruct):
             self._debug['components']['start'] = self._io.pos()
             self.components = [None] * (self.num_components)
             for i in range(self.num_components):
-                if not 'arr' in self._debug['components']:
+                if 'arr' not in self._debug['components']:
                     self._debug['components']['arr'] = []
                 self._debug['components']['arr'].append({'start': self._io.pos()})
                 _t_components = Jpeg.SegmentSos.Component(self._io, self, self._root)
@@ -246,7 +254,7 @@ class Jpeg(KaitaiStruct):
             self._debug['components']['start'] = self._io.pos()
             self.components = [None] * (self.num_components)
             for i in range(self.num_components):
-                if not 'arr' in self._debug['components']:
+                if 'arr' not in self._debug['components']:
                     self._debug['components']['arr'] = []
                 self._debug['components']['arr'].append({'start': self._io.pos()})
                 _t_components = Jpeg.SegmentSof0.Component(self._io, self, self._root)
@@ -305,7 +313,7 @@ class Jpeg(KaitaiStruct):
             self._debug['extra_zero']['start'] = self._io.pos()
             self.extra_zero = self._io.read_bytes(1)
             self._debug['extra_zero']['end'] = self._io.pos()
-            if not self.extra_zero == b"\x00":
+            if self.extra_zero != b"\x00":
                 raise kaitaistruct.ValidationNotEqualError(b"\x00", self.extra_zero, self._io, u"/types/exif_in_jpeg/seq/0")
             self._debug['data']['start'] = self._io.pos()
             self._raw_data = self._io.read_bytes_full()
