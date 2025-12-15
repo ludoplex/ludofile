@@ -210,9 +210,25 @@ static uint8_t* read_file(const char *path, size_t *length) {
     }
     
     /* For regular files, get size first */
-    fseek(fp, 0, SEEK_END);
-    *length = (size_t)ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        perror(path);
+        fclose(fp);
+        return NULL;
+    }
+    
+    long len = ftell(fp);
+    if (len < 0) {
+        perror(path);
+        fclose(fp);
+        return NULL;
+    }
+    *length = (size_t)len;
+    
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+        perror(path);
+        fclose(fp);
+        return NULL;
+    }
     
     uint8_t *data = malloc(*length);
     if (!data) {

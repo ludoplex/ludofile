@@ -12,7 +12,33 @@ set -e
 
 # Configuration
 LUDOFILE_VERSION="0.6.0"
-LUDOFILE_DIR="$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")"
+
+# Portable way to get the script directory
+# This works on both Linux (with readlink -f) and macOS (without it)
+get_script_dir() {
+    local source="${1:-$0}"
+    local dir=""
+    
+    # Resolve symlinks if possible
+    if command -v readlink >/dev/null 2>&1; then
+        # Try GNU readlink -f first
+        if readlink -f "$source" >/dev/null 2>&1; then
+            source="$(readlink -f "$source")"
+        else
+            # macOS: follow symlinks manually
+            while [ -L "$source" ]; do
+                dir="$(cd -P "$(dirname "$source")" && pwd)"
+                source="$(readlink "$source")"
+                [ "${source%${source#?}}" != "/" ] && source="$dir/$source"
+            done
+        fi
+    fi
+    
+    cd -P "$(dirname "$source")" && pwd
+}
+
+LUDOFILE_DIR="$(get_script_dir "$0")"
+LUDOFILE_DIR="$(dirname "$LUDOFILE_DIR")"  # Go up one level from scripts/
 LUDOFILE_BIN="${LUDOFILE_DIR}/bin"
 LUDOFILE_LIB="${LUDOFILE_DIR}/lib"
 LUDOFILE_MAGIC_DEFS="${LUDOFILE_DIR}/polyfile/magic_defs"

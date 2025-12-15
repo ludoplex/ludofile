@@ -12,10 +12,13 @@
 #define INITIAL_CAPACITY 16
 
 /*
- * Forward declarations for built-in parsers
+ * NOTE: The following parser functions are declared but not yet implemented.
+ * They will be implemented in separate files when the full parser support
+ * is added. The declarations are kept here for documentation purposes.
+ *
+ * extern ParseMatchIterator* pdf_parser(FileStream *stream, ParseMatch *parent);
+ * extern ParseMatchIterator* zip_parser(FileStream *stream, ParseMatch *parent);
  */
-extern ParseMatchIterator* pdf_parser(FileStream *stream, ParseMatch *parent);
-extern ParseMatchIterator* zip_parser(FileStream *stream, ParseMatch *parent);
 
 /*
  * Create new parser registry

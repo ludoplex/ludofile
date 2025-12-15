@@ -140,11 +140,27 @@ FileStream* file_stream_open(const char *path) {
         return NULL;
     }
     
-    /* Get file size */
-    fseek(fp, 0, SEEK_END);
-    stream->length = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+    /* Get file size using fseek/ftell with error checking */
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        free(stream);
+        return NULL;
+    }
     
+    long len = ftell(fp);
+    if (len < 0) {
+        fclose(fp);
+        free(stream);
+        return NULL;
+    }
+    
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+        fclose(fp);
+        free(stream);
+        return NULL;
+    }
+    
+    stream->length = (size_t)len;
     stream->handle = fp;
     stream->offset = 0;
     stream->start = 0;

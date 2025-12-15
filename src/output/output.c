@@ -115,6 +115,10 @@ void json_write_string(FILE *out, const char *str) {
 
 /*
  * Simple MD5 implementation (placeholder - should use a proper library)
+ * WARNING: This is NOT a cryptographic hash function. It's a placeholder
+ * that generates a deterministic output for testing purposes only.
+ * Do NOT rely on this for integrity verification or security purposes.
+ * A proper implementation would use OpenSSL, libcrypto, or similar.
  */
 char* compute_md5(const uint8_t *data, size_t length) {
     /* Placeholder - return dummy hash */
@@ -134,6 +138,7 @@ char* compute_md5(const uint8_t *data, size_t length) {
 
 /*
  * Simple SHA1 implementation (placeholder)
+ * WARNING: This is NOT a cryptographic hash function. See compute_md5 note.
  */
 char* compute_sha1(const uint8_t *data, size_t length) {
     char *result = malloc(41);
@@ -151,6 +156,7 @@ char* compute_sha1(const uint8_t *data, size_t length) {
 
 /*
  * Simple SHA256 implementation (placeholder)
+ * WARNING: This is NOT a cryptographic hash function. See compute_md5 note.
  */
 char* compute_sha256(const uint8_t *data, size_t length) {
     char *result = malloc(65);
@@ -533,11 +539,26 @@ LudofileResult output_html(FILE *out, Match *match, const uint8_t *data,
     char mime_list[1024] = "unknown";
     
     if (mimes && count > 0) {
-        strcpy(mime_list, mimes[0]);
-        for (size_t i = 1; i < count && strlen(mime_list) < 900; i++) {
-            strcat(mime_list, ", ");
-            strcat(mime_list, mimes[i]);
+        size_t pos = 0;
+        size_t max_len = sizeof(mime_list) - 1;
+        
+        for (size_t i = 0; i < count; i++) {
+            size_t mime_len = strlen(mimes[i]);
+            size_t needed = (i == 0) ? mime_len : mime_len + 2;  /* ", " prefix */
+            
+            if (pos + needed >= max_len) {
+                /* No more space, truncate */
+                break;
+            }
+            
+            if (i > 0) {
+                mime_list[pos++] = ',';
+                mime_list[pos++] = ' ';
+            }
+            memcpy(mime_list + pos, mimes[i], mime_len);
+            pos += mime_len;
         }
+        mime_list[pos] = '\0';
         free(mimes);
     }
     
