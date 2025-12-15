@@ -6,3 +6,21 @@ polyfile/trie_partial.gz
 *.pyc
 .vscode/
 .vscode/*
+
+# C build artifacts
+build/
+bin/
+*.o
+*.a
+*.so
+*.exe
+ludofile_core
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
