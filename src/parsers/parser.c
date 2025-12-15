@@ -6,19 +6,12 @@
  */
 
 #include "parser.h"
+#include "pdf.h"
+#include "zip.h"
 #include <stdlib.h>
 #include <string.h>
 
 #define INITIAL_CAPACITY 16
-
-/*
- * NOTE: The following parser functions are declared but not yet implemented.
- * They will be implemented in separate files when the full parser support
- * is added. The declarations are kept here for documentation purposes.
- *
- * extern ParseMatchIterator* pdf_parser(FileStream *stream, ParseMatch *parent);
- * extern ParseMatchIterator* zip_parser(FileStream *stream, ParseMatch *parent);
- */
 
 /*
  * Create new parser registry
@@ -106,9 +99,6 @@ ParserRegistry* parser_registry_default(void) {
     if (!default_registry) return NULL;
     
     /* Register built-in parsers */
-    /* Note: These are placeholders - actual parsers to be implemented */
-    
-    /*
     parser_registry_register(default_registry, "application/pdf",
                              pdf_parser, "PDF Parser",
                              "Parses PDF document structure");
@@ -120,7 +110,6 @@ ParserRegistry* parser_registry_default(void) {
     parser_registry_register(default_registry, "application/java-archive",
                              zip_parser, "JAR Parser",
                              "Parses Java archive structure (ZIP-based)");
-    */
     
     return default_registry;
 }

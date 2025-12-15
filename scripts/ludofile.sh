@@ -1,9 +1,8 @@
 #!/bin/sh
 # LudoFile APE Shell Coordinator
 #
-# This is the main entry point for LudoFile when using the APE shell
-# coordination layer. It orchestrates the various C components and
-# provides a unified interface.
+# This is the main entry point for LudoFile. It orchestrates the
+# various C components and provides a unified interface.
 #
 # Copyright (c) 2024 LudoPlex
 # SPDX-License-Identifier: Apache-2.0
@@ -40,8 +39,6 @@ get_script_dir() {
 LUDOFILE_DIR="$(get_script_dir "$0")"
 LUDOFILE_DIR="$(dirname "$LUDOFILE_DIR")"  # Go up one level from scripts/
 LUDOFILE_BIN="${LUDOFILE_DIR}/bin"
-LUDOFILE_LIB="${LUDOFILE_DIR}/lib"
-LUDOFILE_MAGIC_DEFS="${LUDOFILE_DIR}/polyfile/magic_defs"
 
 # Default options
 OUTPUT_FORMAT="file"
@@ -56,7 +53,6 @@ QUIET=0
 DEBUG=0
 LIST_TYPES=0
 HTML_OUTPUT=""
-DEBUGGER=0
 
 # ANSI color codes
 RED='\033[0;31m'
@@ -110,7 +106,6 @@ options:
   --only-match, -m      Match only, don't parse
   --require-match       Exit with code 127 if no match
   --max-matches N       Stop after N matches
-  --debugger, -db       Drop into interactive debugger
   --quiet, -q           Suppress all log output
   --debug, -d           Print debug information
   --version, -v         Print version information
@@ -124,24 +119,30 @@ For more information, see https://github.com/ludoplex/ludofile
 EOF
 }
 
-# Check if C binary is available
-check_binary() {
+# Find the C binary
+find_binary() {
     LUDOFILE_CORE="${LUDOFILE_BIN}/ludofile_core"
     
-    if [ ! -x "$LUDOFILE_CORE" ]; then
-        # Try to find in current directory
-        if [ -x "${LUDOFILE_DIR}/ludofile_core" ]; then
-            LUDOFILE_CORE="${LUDOFILE_DIR}/ludofile_core"
-        elif [ -x "./ludofile_core" ]; then
-            LUDOFILE_CORE="./ludofile_core"
-        else
-            log_debug "C binary not found, falling back to Python implementation"
-            return 1
-        fi
+    if [ -x "$LUDOFILE_CORE" ]; then
+        log_debug "Using C binary: ${LUDOFILE_CORE}"
+        return 0
     fi
     
-    log_debug "Using C binary: ${LUDOFILE_CORE}"
-    return 0
+    # Try to find in current directory
+    if [ -x "${LUDOFILE_DIR}/ludofile_core" ]; then
+        LUDOFILE_CORE="${LUDOFILE_DIR}/ludofile_core"
+        log_debug "Using C binary: ${LUDOFILE_CORE}"
+        return 0
+    fi
+    
+    if [ -x "./ludofile_core" ]; then
+        LUDOFILE_CORE="./ludofile_core"
+        log_debug "Using C binary: ${LUDOFILE_CORE}"
+        return 0
+    fi
+    
+    log_error "ludofile_core binary not found. Please run 'make' to build."
+    return 1
 }
 
 # Run the C core binary
@@ -171,40 +172,12 @@ run_core() {
     exec "$LUDOFILE_CORE" $ARGS "$INPUT_FILE"
 }
 
-# Fall back to Python implementation
-run_python() {
-    ARGS=""
-    
-    case "$OUTPUT_FORMAT" in
-        file) ARGS="$ARGS --format file" ;;
-        mime) ARGS="$ARGS --format mime" ;;
-        json|sbud) ARGS="$ARGS --format sbud" ;;
-        html) ARGS="$ARGS --format html" ;;
-    esac
-    
-    [ -n "$OUTPUT_PATH" ] && ARGS="$ARGS --output $OUTPUT_PATH"
-    [ -n "$HTML_OUTPUT" ] && ARGS="$ARGS --html $HTML_OUTPUT"
-    [ -n "$FILETYPE_FILTER" ] && ARGS="$ARGS --filetype $FILETYPE_FILTER"
-    [ "$MAX_MATCHES" -ge 0 ] && ARGS="$ARGS --max-matches $MAX_MATCHES"
-    [ "$ONLY_MATCH_MIME" -eq 1 ] && ARGS="$ARGS --only-match-mime"
-    [ "$ONLY_MATCH" -eq 1 ] && ARGS="$ARGS --only-match"
-    [ "$REQUIRE_MATCH" -eq 1 ] && ARGS="$ARGS --require-match"
-    [ "$QUIET" -eq 1 ] && ARGS="$ARGS --quiet"
-    [ "$DEBUG" -eq 1 ] && ARGS="$ARGS --debug"
-    [ "$DEBUGGER" -eq 1 ] && ARGS="$ARGS --debugger"
-    
-    log_debug "Running Python: python -m polyfile ${ARGS} ${INPUT_FILE}"
-    
-    # shellcheck disable=SC2086
-    exec python3 -m polyfile $ARGS "$INPUT_FILE"
-}
-
 # List supported file types
 list_types() {
-    if check_binary; then
+    if find_binary; then
         exec "$LUDOFILE_CORE" -l
     else
-        exec python3 -m polyfile --list
+        exit 1
     fi
 }
 
@@ -261,10 +234,6 @@ parse_args() {
             -M|--max-matches)
                 MAX_MATCHES="$2"
                 shift 2
-                ;;
-            -db|--debugger)
-                DEBUGGER=1
-                shift
                 ;;
             -q|--quiet)
                 QUIET=1
@@ -327,11 +296,11 @@ main() {
         exit 1
     fi
     
-    # Try C binary first, fall back to Python
-    if [ "$DEBUGGER" -eq 0 ] && check_binary; then
+    # Find and run C binary
+    if find_binary; then
         run_core
     else
-        run_python
+        exit 1
     fi
 }
 

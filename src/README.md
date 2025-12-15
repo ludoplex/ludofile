@@ -1,8 +1,8 @@
-# LudoFile C Components
+# LudoFile C Implementation
 
-This directory contains the Cosmopolitan C implementation of LudoFile's core
-functionality. The C components provide high-performance file analysis
-capabilities and are designed to be portable using Cosmopolitan libc.
+This directory contains the Cosmopolitan C implementation of LudoFile's
+file analysis functionality. The C components provide high-performance file
+analysis capabilities and are designed to be portable using Cosmopolitan libc.
 
 ## Architecture
 
@@ -21,7 +21,9 @@ src/
 │   └── output.c   JSON, HTML, SBUD output
 ├── parsers/       File format parsers
 │   ├── parser.h   Parser plugin interface
-│   └── parser.c   Parser registry
+│   ├── parser.c   Parser registry
+│   ├── pdf.h/c    PDF document parser
+│   └── zip.h/c    ZIP archive parser
 └── main.c         Main entry point
 ```
 
@@ -55,8 +57,8 @@ For building an Actually Portable Executable (APE) using Cosmopolitan libc:
 
 ## APE Shell Coordination
 
-The `scripts/ludofile.sh` script serves as the coordinator between the C
-components and provides fallback to the Python implementation when needed.
+The `scripts/ludofile.sh` script serves as the coordinator that invokes
+the C binary with appropriate arguments.
 
 ### Usage
 
@@ -122,46 +124,17 @@ Provides output formatting:
 
 ### Parsers Module (`src/parsers/`)
 
-Plugin interface for file format parsers:
+File format parsers:
 
-- Parser registry management
-- Iterator-based result generation
-- Placeholder for PDF, ZIP, and other parsers
-
-## Integration with Python
-
-The C components can be used alongside the Python implementation:
-
-1. The APE shell coordinator (`ludofile.sh`) tries the C binary first
-2. Falls back to Python for complex operations (debugger, HTML generation)
-3. Both implementations share the same magic definition files
-
-## Performance
-
-The C implementation provides significant performance improvements:
-
-- Direct memory access without Python interpreter overhead
-- Efficient pattern matching using compiled C code
-- Lower memory footprint for large files
-- Portable binary via Cosmopolitan libc
-
-## Dependencies
-
-### Build Requirements
-
-- C compiler (GCC, Clang, or compatible)
-- Make
-- Optional: Cosmopolitan libc for APE builds
-
-### Runtime Requirements
-
-- None for standard build
-- None for Cosmopolitan APE build (self-contained)
+- **PDF Parser** - Parses PDF document structure including objects, 
+  streams, and cross-reference tables
+- **ZIP Parser** - Parses ZIP archive structure including local headers,
+  central directory, and end of central directory record
 
 ## Testing
 
 ```bash
-make test
+make check
 ```
 
 ## License
