@@ -215,7 +215,10 @@ ZipLocalFileHeader* zip_parse_local_header(const uint8_t *data, size_t len, size
     }
     
     header->data_offset = pos;
-    header->data = (uint8_t*)(data + pos);  /* Point to data in original buffer */
+    /* Note: data points to the original buffer - caller must ensure buffer 
+     * lifetime exceeds header lifetime. For iterator usage, the buffer is 
+     * kept alive by the iterator state. */
+    header->data = (uint8_t*)(data + pos);
     
     return header;
 }
@@ -445,6 +448,7 @@ LudofileResult zip_archive_parse(ZipArchive *archive, const uint8_t *data, size_
  */
 typedef struct {
     ZipArchive *archive;
+    uint8_t *data;            /* Data buffer ownership */
     size_t current_item;
     ParseMatch *parent;
     ParseMatch **matches;
@@ -476,6 +480,7 @@ static void zip_parser_free_iter(ParseMatchIterator *iter) {
     ZipParserState *state = (ZipParserState*)iter->state;
     if (state) {
         if (state->archive) zip_archive_free(state->archive);
+        free(state->data);  /* Free the data buffer */
         free(state->matches);
         free(state);
     }
@@ -523,6 +528,7 @@ ParseMatchIterator* zip_parser(FileStream *stream, ParseMatch *parent) {
     }
     
     state->archive = archive;
+    state->data = data;  /* Track data buffer for cleanup */
     state->parent = parent;
     state->matches_capacity = 64;
     state->matches = malloc(64 * sizeof(ParseMatch*));
@@ -590,6 +596,7 @@ ParseMatchIterator* zip_parser(FileStream *stream, ParseMatch *parent) {
     ParseMatchIterator *iter = malloc(sizeof(ParseMatchIterator));
     if (!iter) {
         free(state->matches);
+        free(state->data);
         free(state);
         zip_archive_free(archive);
         return NULL;
@@ -598,8 +605,6 @@ ParseMatchIterator* zip_parser(FileStream *stream, ParseMatch *parent) {
     iter->state = state;
     iter->next = zip_parser_next;
     iter->free = zip_parser_free_iter;
-    
-    /* Note: data ownership transferred to state, will be freed when archive is freed */
     
     return iter;
 }

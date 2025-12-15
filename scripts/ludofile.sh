@@ -141,7 +141,7 @@ find_binary() {
         return 0
     fi
     
-    log_error "ludofile_core binary not found. Please run 'make' to build."
+    log_error "ludofile_core binary not found. Please build with 'make'."
     return 1
 }
 

@@ -284,21 +284,21 @@ TEST(zip_archive_new) {
 /* ============= Integration Tests ============= */
 
 TEST(pdf_basic_parse) {
-    /* Minimal PDF structure */
+    /* Minimal PDF structure - note: this is for testing parser doesn't crash */
+    /* A proper PDF would need correct offsets in the xref table */
     const char *pdf = "%PDF-1.4\n"
                       "1 0 obj\n<< /Type /Catalog >>\nendobj\n"
-                      "xref\n0 2\n"
+                      "xref\n0 1\n"
                       "0000000000 65535 f \n"
-                      "0000000009 00000 n \n"
-                      "trailer\n<< /Size 2 /Root 1 0 R >>\n"
+                      "trailer\n<< /Size 1 >>\n"
                       "startxref\n47\n%%EOF";
     
     PDFDocument *doc = pdf_document_new();
     ASSERT_NOT_NULL(doc);
     
-    LudofileResult res = pdf_document_parse(doc, (const uint8_t*)pdf, strlen(pdf));
-    /* Note: This may fail due to offset issues in test data */
-    /* We're just testing that it doesn't crash */
+    /* Just test that the parser doesn't crash on sample data */
+    /* The offsets may not be perfect in this test data */
+    pdf_document_parse(doc, (const uint8_t*)pdf, strlen(pdf));
     
     pdf_document_free(doc);
 }

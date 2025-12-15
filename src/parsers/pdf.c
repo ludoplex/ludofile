@@ -780,6 +780,7 @@ LudofileResult pdf_document_parse(PDFDocument *doc, const uint8_t *data, size_t 
  */
 typedef struct {
     PDFDocument *doc;
+    uint8_t *data;            /* Data buffer ownership */
     size_t current_obj;
     ParseMatch *parent;
     ParseMatch **matches;
@@ -837,6 +838,7 @@ static void pdf_parser_free(ParseMatchIterator *iter) {
     PDFParserState *state = (PDFParserState*)iter->state;
     if (state) {
         if (state->doc) pdf_document_free(state->doc);
+        free(state->data);  /* Free the data buffer */
         /* Matches are owned by caller, don't free them */
         free(state->matches);
         free(state);
@@ -885,6 +887,7 @@ ParseMatchIterator* pdf_parser(FileStream *stream, ParseMatch *parent) {
     }
     
     state->doc = doc;
+    state->data = data;  /* Track data buffer for cleanup */
     state->parent = parent;
     state->matches_capacity = 64;
     state->matches = malloc(64 * sizeof(ParseMatch*));
@@ -946,12 +949,11 @@ ParseMatchIterator* pdf_parser(FileStream *stream, ParseMatch *parent) {
         }
     }
     
-    /* Note: data is now owned by doc, don't free it separately */
-    
     /* Create iterator */
     ParseMatchIterator *iter = malloc(sizeof(ParseMatchIterator));
     if (!iter) {
         free(state->matches);
+        free(state->data);
         free(state);
         pdf_document_free(doc);
         return NULL;
