@@ -1,0 +1,24 @@
+Pillow>=5.0.0
+abnf~=2.2.0
+chardet~=5.0.0
+cint>=1.0.0
+fickling>=0.0.6
+graphviz>=0.20.1
+intervaltree>=2.4.0
+jinja2>=2.1.0
+kaitaistruct~=0.10
+networkx>=2.6.3
+pdfminer.six==20220524
+pyyaml>=3.13
+setuptools>=65.5.1
+
+[:platform_system == "Windows"]
+pyreadline3
+
+[demangle]
+cxxfilt
+
+[dev]
+flake8
+mypy
+pytest
