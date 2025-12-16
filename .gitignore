@@ -1,8 +1,23 @@
-polyfile/triddefs_xml.7z
-polyfile/defs/*
-poyfile/trie_full.gz
-polyfile/trie_partial.gz
+# C build artifacts
+build/
+bin/
+*.o
+*.a
+*.so
+*.exe
+ludofile_core
+test_ludofile
+
+# Editor files
 ~*
-*.pyc
+*.swp
+*.swo
+*~
 .vscode/
-.vscode/*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Other
+_codeql_detected_source_root
