@@ -398,7 +398,7 @@ HttpParseResult http_parse_request(HttpParser *parser, const uint8_t *data,
     
     /* Parse headers */
     p = eol + 2;
-    parser->bytes_consumed = (size_t)(p - data);
+    size_t request_line_len = (size_t)(p - data);
     
     HttpParseResult result = parse_headers(parser, p, (size_t)(end - p),
                                            &request->headers,
@@ -410,7 +410,8 @@ HttpParseResult http_parse_request(HttpParser *parser, const uint8_t *data,
         return result;
     }
     
-    parser->bytes_consumed += parser->bytes_consumed;
+    /* parser->bytes_consumed from parse_headers is relative to header start */
+    parser->bytes_consumed = request_line_len + parser->bytes_consumed;
     
     /* Parse body if present */
     if (request->content_length > 0 || request->chunked) {
@@ -488,7 +489,7 @@ HttpParseResult http_parse_response(HttpParser *parser, const uint8_t *data,
     
     /* Parse headers */
     p = eol + 2;
-    parser->bytes_consumed = (size_t)(p - data);
+    size_t status_line_len = (size_t)(p - data);
     
     HttpParseResult result = parse_headers(parser, p, (size_t)(end - p),
                                            &response->headers,
@@ -500,7 +501,8 @@ HttpParseResult http_parse_response(HttpParser *parser, const uint8_t *data,
         return result;
     }
     
-    parser->bytes_consumed += parser->bytes_consumed;
+    /* parser->bytes_consumed from parse_headers is relative to header start */
+    parser->bytes_consumed = status_line_len + parser->bytes_consumed;
     
     /* Parse body if present */
     if (response->content_length > 0 || response->chunked) {
@@ -804,13 +806,15 @@ bool http_parse_content_type(const char *value, char **media_type,
         size_t val_len = (size_t)(p - val_start);
         if (*p == '"') p++;
         
-        if (charset && strncasecmp(param_start, "charset", param_len) == 0) {
+        /* Check for charset parameter (must match exact length) */
+        if (charset && param_len == 7 && strncasecmp(param_start, "charset", 7) == 0) {
             *charset = malloc(val_len + 1);
             if (*charset) {
                 memcpy(*charset, val_start, val_len);
                 (*charset)[val_len] = '\0';
             }
-        } else if (boundary && strncasecmp(param_start, "boundary", param_len) == 0) {
+        /* Check for boundary parameter (must match exact length) */
+        } else if (boundary && param_len == 8 && strncasecmp(param_start, "boundary", 8) == 0) {
             *boundary = malloc(val_len + 1);
             if (*boundary) {
                 memcpy(*boundary, val_start, val_len);
