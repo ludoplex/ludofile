@@ -460,7 +460,9 @@ TEST(pdf_parser_version_extraction) {
     ASSERT_NOT_NULL(doc);
     
     LudofileResult res = pdf_document_parse(doc, (const uint8_t*)pdf_content, strlen(pdf_content));
-    /* May fail due to offset issues in minimal PDF, but shouldn't crash */
+    /* This test verifies the parser doesn't crash on minimal PDF data.
+     * The result may fail due to simplified test data with imprecise offsets,
+     * but we're testing robustness rather than successful parsing. */
     (void)res;
     
     pdf_document_free(doc);

@@ -15,6 +15,10 @@ on:
     branches: [ master, main ]
   workflow_dispatch:
 
+# Set minimal permissions for security
+permissions:
+  contents: read
+
 jobs:
   # Standard Build - Linux
   build-linux:
@@ -383,7 +387,14 @@ jobs:
 
     - name: Check for compiler warnings
       run: |
-        CC=gcc CFLAGS="-Wall -Wextra -Werror -pedantic -std=c11" make clean all 2>&1 || echo "Build completed with warnings"
+        # Build with strict warning settings. This step is informational -
+        # warnings are shown but don't fail the CI since some existing code
+        # has unused parameter warnings that are acceptable.
+        CC=gcc CFLAGS="-Wall -Wextra -pedantic -std=c11" make clean all 2>&1 | tee /tmp/build.log
+        if grep -q "warning:" /tmp/build.log; then
+          echo "::warning::Build produced warnings - see output above"
+        fi
+      continue-on-error: true
 
   # Summary job
   test-summary:
