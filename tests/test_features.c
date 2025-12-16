@@ -30,11 +30,15 @@
 #include <sys/stat.h>
 
 #include "../src/core/types.h"
+#include "../src/core/arena.h"
+#include "../src/core/hashtable.h"
 #include "../src/magic/magic.h"
 #include "../src/output/output.h"
 #include "../src/parsers/parser.h"
 #include "../src/parsers/pdf.h"
 #include "../src/parsers/zip.h"
+#include "../src/http/http.h"
+#include "../src/ast/ast.h"
 
 /* Test counters */
 static int tests_run = 0;
@@ -841,6 +845,646 @@ TEST(utility_hash_functions) {
 }
 
 /* ============================================================
+ * Arena Allocator Tests
+ * ============================================================ */
+
+TEST(arena_init_and_free) {
+    Arena arena;
+    arena_init(&arena, 0);
+    ASSERT(arena_is_valid(&arena));
+    ASSERT_EQ(arena.default_chunk_size, ARENA_DEFAULT_CHUNK_SIZE);
+    arena_free(&arena);
+}
+
+TEST(arena_alloc_basic) {
+    Arena arena;
+    arena_init(&arena, 4096);
+    
+    void *p1 = arena_alloc(&arena, 100, 8);
+    ASSERT_NOT_NULL(p1);
+    
+    void *p2 = arena_alloc(&arena, 200, 16);
+    ASSERT_NOT_NULL(p2);
+    ASSERT_NE(p1, p2);
+    
+    /* Check alignment */
+    ASSERT_EQ((uintptr_t)p1 % 8, 0);
+    ASSERT_EQ((uintptr_t)p2 % 16, 0);
+    
+    arena_free(&arena);
+}
+
+TEST(arena_alloc_large) {
+    Arena arena;
+    arena_init(&arena, 1024);  /* Small default chunk */
+    
+    /* Allocate something larger than default chunk */
+    void *p = arena_alloc(&arena, 8192, 8);
+    ASSERT_NOT_NULL(p);
+    
+    /* Should still be able to allocate more */
+    void *p2 = arena_alloc(&arena, 100, 8);
+    ASSERT_NOT_NULL(p2);
+    
+    arena_free(&arena);
+}
+
+TEST(arena_calloc) {
+    Arena arena;
+    arena_init(&arena, 0);
+    
+    uint8_t *p = arena_calloc(&arena, 256, 8);
+    ASSERT_NOT_NULL(p);
+    
+    /* Check zeroed */
+    for (int i = 0; i < 256; i++) {
+        ASSERT_EQ(p[i], 0);
+    }
+    
+    arena_free(&arena);
+}
+
+TEST(arena_strdup) {
+    Arena arena;
+    arena_init(&arena, 0);
+    
+    char *s = arena_strdup(&arena, "Hello, World!");
+    ASSERT_NOT_NULL(s);
+    ASSERT_STR_EQ(s, "Hello, World!");
+    
+    char *s2 = arena_strndup(&arena, "Test string", 4);
+    ASSERT_NOT_NULL(s2);
+    ASSERT_STR_EQ(s2, "Test");
+    
+    arena_free(&arena);
+}
+
+TEST(arena_reset) {
+    Arena arena;
+    arena_init(&arena, 4096);
+    
+    void *p1 = arena_alloc(&arena, 1000, 8);
+    ASSERT_NOT_NULL(p1);
+    
+    size_t used_before;
+    arena_stats(&arena, NULL, &used_before, NULL);
+    ASSERT(used_before >= 1000);
+    
+    arena_reset(&arena);
+    
+    size_t used_after;
+    arena_stats(&arena, NULL, &used_after, NULL);
+    ASSERT_EQ(used_after, 0);
+    
+    arena_free(&arena);
+}
+
+TEST(arena_stats) {
+    Arena arena;
+    arena_init(&arena, 4096);
+    
+    arena_alloc(&arena, 500, 8);
+    arena_alloc(&arena, 500, 8);
+    
+    size_t total_alloc, total_used, num_chunks;
+    arena_stats(&arena, &total_alloc, &total_used, &num_chunks);
+    
+    ASSERT(total_alloc >= 4096);
+    ASSERT(total_used >= 1000);
+    ASSERT(num_chunks >= 1);
+    
+    arena_free(&arena);
+}
+
+/* ============================================================
+ * Hash Table Tests
+ * ============================================================ */
+
+TEST(hashtable_init_and_free) {
+    HashTable ht;
+    ASSERT(ht_init(&ht, 0, NULL));
+    ASSERT_EQ(ht_count(&ht), 0);
+    ht_free(&ht);
+}
+
+TEST(hashtable_insert_lookup) {
+    HashTable ht;
+    ASSERT(ht_init(&ht, 16, NULL));
+    
+    int val1 = 100, val2 = 200, val3 = 300;
+    ASSERT(ht_insert(&ht, 1, &val1));
+    ASSERT(ht_insert(&ht, 2, &val2));
+    ASSERT(ht_insert(&ht, 3, &val3));
+    
+    ASSERT_EQ(ht_count(&ht), 3);
+    
+    int *p1 = ht_lookup(&ht, 1);
+    ASSERT_NOT_NULL(p1);
+    ASSERT_EQ(*p1, 100);
+    
+    int *p2 = ht_lookup(&ht, 2);
+    ASSERT_NOT_NULL(p2);
+    ASSERT_EQ(*p2, 200);
+    
+    /* Lookup non-existent key */
+    void *p4 = ht_lookup(&ht, 999);
+    ASSERT_NULL(p4);
+    
+    ht_free(&ht);
+}
+
+TEST(hashtable_update) {
+    HashTable ht;
+    ASSERT(ht_init(&ht, 0, NULL));
+    
+    int val1 = 100, val2 = 200;
+    ASSERT(ht_insert(&ht, 42, &val1));
+    
+    int *p = ht_lookup(&ht, 42);
+    ASSERT_EQ(*p, 100);
+    
+    /* Update existing key */
+    ASSERT(ht_insert(&ht, 42, &val2));
+    p = ht_lookup(&ht, 42);
+    ASSERT_EQ(*p, 200);
+    
+    /* Count should still be 1 */
+    ASSERT_EQ(ht_count(&ht), 1);
+    
+    ht_free(&ht);
+}
+
+TEST(hashtable_remove) {
+    HashTable ht;
+    ASSERT(ht_init(&ht, 0, NULL));
+    
+    int val = 42;
+    ASSERT(ht_insert(&ht, 1, &val));
+    ASSERT(ht_contains(&ht, 1));
+    
+    ASSERT(ht_remove(&ht, 1));
+    ASSERT(!ht_contains(&ht, 1));
+    ASSERT_EQ(ht_count(&ht), 0);
+    
+    /* Remove non-existent key */
+    ASSERT(!ht_remove(&ht, 999));
+    
+    ht_free(&ht);
+}
+
+TEST(hashtable_clear) {
+    HashTable ht;
+    ASSERT(ht_init(&ht, 0, NULL));
+    
+    int vals[10];
+    for (int i = 0; i < 10; i++) {
+        vals[i] = i * 10;
+        ASSERT(ht_insert(&ht, (uint32_t)i, &vals[i]));
+    }
+    ASSERT_EQ(ht_count(&ht), 10);
+    
+    ht_clear(&ht);
+    ASSERT_EQ(ht_count(&ht), 0);
+    
+    for (int i = 0; i < 10; i++) {
+        ASSERT(!ht_contains(&ht, (uint32_t)i));
+    }
+    
+    ht_free(&ht);
+}
+
+TEST(hashtable_resize) {
+    HashTable ht;
+    ASSERT(ht_init(&ht, 8, NULL));  /* Small initial capacity */
+    
+    int vals[100];
+    for (int i = 0; i < 100; i++) {
+        vals[i] = i * 7;
+        ASSERT(ht_insert(&ht, (uint32_t)(i + 1), &vals[i]));
+    }
+    
+    ASSERT_EQ(ht_count(&ht), 100);
+    
+    /* Verify all values still accessible after resize */
+    for (int i = 0; i < 100; i++) {
+        int *p = ht_lookup(&ht, (uint32_t)(i + 1));
+        ASSERT_NOT_NULL(p);
+        ASSERT_EQ(*p, i * 7);
+    }
+    
+    ht_free(&ht);
+}
+
+TEST(string_hashtable_basic) {
+    StringHashTable sht;
+    ASSERT(sht_init(&sht, 0, NULL));
+    
+    int val1 = 1, val2 = 2;
+    ASSERT(sht_insert(&sht, "key1", &val1));
+    ASSERT(sht_insert(&sht, "key2", &val2));
+    
+    ASSERT_EQ(sht_count(&sht), 2);
+    
+    int *p1 = sht_lookup(&sht, "key1");
+    ASSERT_NOT_NULL(p1);
+    ASSERT_EQ(*p1, 1);
+    
+    ASSERT(sht_contains(&sht, "key2"));
+    ASSERT(!sht_contains(&sht, "nonexistent"));
+    
+    sht_free(&sht);
+}
+
+TEST(hashtable_with_arena) {
+    Arena arena;
+    arena_init(&arena, 0);
+    
+    HashTable ht;
+    ASSERT(ht_init(&ht, 32, &arena));
+    
+    int val = 42;
+    ASSERT(ht_insert(&ht, 1, &val));
+    
+    int *p = ht_lookup(&ht, 1);
+    ASSERT_NOT_NULL(p);
+    ASSERT_EQ(*p, 42);
+    
+    /* Free arena (will free hash table memory too) */
+    ht_free(&ht);
+    arena_free(&arena);
+}
+
+TEST(hash_functions) {
+    /* Test uint32 hash */
+    uint64_t h1 = hash_uint32(0);
+    uint64_t h2 = hash_uint32(1);
+    uint64_t h3 = hash_uint32(0xFFFFFFFF);
+    
+    /* Should have different values (good avalanche) */
+    ASSERT_NE(h1, h2);
+    ASSERT_NE(h2, h3);
+    ASSERT_NE(h1, h3);
+    
+    /* Test string hash */
+    uint32_t s1 = hash_string("hello");
+    uint32_t s2 = hash_string("Hello");  /* Different case */
+    uint32_t s3 = hash_string("hello");  /* Same string */
+    
+    ASSERT_NE(s1, s2);
+    ASSERT_EQ(s1, s3);
+    
+    /* Test bytes hash */
+    uint8_t data1[] = {1, 2, 3};
+    uint8_t data2[] = {1, 2, 4};
+    
+    uint32_t b1 = hash_bytes(data1, 3);
+    uint32_t b2 = hash_bytes(data2, 3);
+    ASSERT_NE(b1, b2);
+}
+
+/* ============================================================
+ * HTTP Module Tests
+ * ============================================================ */
+
+TEST(http_is_request_detection) {
+    uint8_t get_req[] = "GET / HTTP/1.1\r\n";
+    ASSERT(http_is_request(get_req, sizeof(get_req) - 1));
+    
+    uint8_t post_req[] = "POST /api HTTP/1.1\r\n";
+    ASSERT(http_is_request(post_req, sizeof(post_req) - 1));
+    
+    uint8_t not_http[] = "Hello World";
+    ASSERT(!http_is_request(not_http, sizeof(not_http) - 1));
+    
+    uint8_t response[] = "HTTP/1.1 200 OK\r\n";
+    ASSERT(!http_is_request(response, sizeof(response) - 1));
+}
+
+TEST(http_is_response_detection) {
+    uint8_t response[] = "HTTP/1.1 200 OK\r\n";
+    ASSERT(http_is_response(response, sizeof(response) - 1));
+    
+    uint8_t response10[] = "HTTP/1.0 404 Not Found\r\n";
+    ASSERT(http_is_response(response10, sizeof(response10) - 1));
+    
+    uint8_t not_http[] = "Not HTTP at all";
+    ASSERT(!http_is_response(not_http, sizeof(not_http) - 1));
+    
+    uint8_t request[] = "GET / HTTP/1.1\r\n";
+    ASSERT(!http_is_response(request, sizeof(request) - 1));
+}
+
+TEST(http_method_parsing) {
+    ASSERT_EQ(http_method_parse("GET", 3), HTTP_METHOD_GET);
+    ASSERT_EQ(http_method_parse("POST", 4), HTTP_METHOD_POST);
+    ASSERT_EQ(http_method_parse("PUT", 3), HTTP_METHOD_PUT);
+    ASSERT_EQ(http_method_parse("DELETE", 6), HTTP_METHOD_DELETE);
+    ASSERT_EQ(http_method_parse("HEAD", 4), HTTP_METHOD_HEAD);
+    ASSERT_EQ(http_method_parse("OPTIONS", 7), HTTP_METHOD_OPTIONS);
+    ASSERT_EQ(http_method_parse("PATCH", 5), HTTP_METHOD_PATCH);
+    ASSERT_EQ(http_method_parse("INVALID", 7), HTTP_METHOD_UNKNOWN);
+}
+
+TEST(http_method_string) {
+    ASSERT_STR_EQ(http_method_string(HTTP_METHOD_GET), "GET");
+    ASSERT_STR_EQ(http_method_string(HTTP_METHOD_POST), "POST");
+    ASSERT_STR_EQ(http_method_string(HTTP_METHOD_PUT), "PUT");
+    ASSERT_STR_EQ(http_method_string(HTTP_METHOD_DELETE), "DELETE");
+    ASSERT_STR_EQ(http_method_string(HTTP_METHOD_UNKNOWN), "UNKNOWN");
+}
+
+TEST(http_status_reason) {
+    ASSERT_STR_EQ(http_status_reason(200), "OK");
+    ASSERT_STR_EQ(http_status_reason(201), "Created");
+    ASSERT_STR_EQ(http_status_reason(404), "Not Found");
+    ASSERT_STR_EQ(http_status_reason(500), "Internal Server Error");
+}
+
+TEST(http_status_category) {
+    ASSERT_EQ(http_status_category(100), HTTP_STATUS_INFORMATIONAL);
+    ASSERT_EQ(http_status_category(200), HTTP_STATUS_SUCCESS);
+    ASSERT_EQ(http_status_category(301), HTTP_STATUS_REDIRECTION);
+    ASSERT_EQ(http_status_category(404), HTTP_STATUS_CLIENT_ERROR);
+    ASSERT_EQ(http_status_category(500), HTTP_STATUS_SERVER_ERROR);
+}
+
+TEST(http_parser_init) {
+    HttpParser parser;
+    http_parser_init(&parser, NULL);
+    
+    ASSERT_EQ(parser.state, HTTP_PARSE_START);
+    ASSERT_EQ(parser.bytes_consumed, 0);
+    
+    http_parser_reset(&parser);
+    ASSERT_EQ(parser.state, HTTP_PARSE_START);
+}
+
+TEST(http_parse_simple_request) {
+    const char *req_str = 
+        "GET /index.html HTTP/1.1\r\n"
+        "Host: example.com\r\n"
+        "User-Agent: Test\r\n"
+        "\r\n";
+    
+    HttpParser parser;
+    http_parser_init(&parser, NULL);
+    
+    HttpRequest request;
+    HttpParseResult result = http_parse_request(&parser, 
+        (const uint8_t *)req_str, strlen(req_str), &request);
+    
+    ASSERT_EQ(result, HTTP_PARSE_OK);
+    ASSERT_EQ(request.method, HTTP_METHOD_GET);
+    ASSERT_EQ(request.version, HTTP_VERSION_1_1);
+    ASSERT_STR_EQ(request.path, "/index.html");
+}
+
+TEST(http_parse_response) {
+    const char *resp_str = 
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html\r\n"
+        "Content-Length: 13\r\n"
+        "\r\n"
+        "Hello, World!";
+    
+    HttpParser parser;
+    http_parser_init(&parser, NULL);
+    
+    HttpResponse response;
+    HttpParseResult result = http_parse_response(&parser,
+        (const uint8_t *)resp_str, strlen(resp_str), &response);
+    
+    ASSERT_EQ(result, HTTP_PARSE_OK);
+    ASSERT_EQ(response.status_code, 200);
+    ASSERT_EQ(response.version, HTTP_VERSION_1_1);
+    ASSERT_STR_EQ(response.reason_phrase, "OK");
+    ASSERT_EQ(response.content_length, 13);
+}
+
+TEST(http_content_type_parsing) {
+    char *media_type = NULL;
+    char *charset = NULL;
+    char *boundary = NULL;
+    
+    ASSERT(http_parse_content_type("text/html; charset=utf-8", 
+                                    &media_type, &charset, &boundary));
+    ASSERT_STR_EQ(media_type, "text/html");
+    ASSERT_STR_EQ(charset, "utf-8");
+    ASSERT_NULL(boundary);
+    
+    free(media_type);
+    free(charset);
+}
+
+/* ============================================================
+ * AST Module Tests
+ * ============================================================ */
+
+TEST(ast_context_creation) {
+    AstContext *ctx = ast_context_new(NULL);
+    ASSERT_NOT_NULL(ctx);
+    ASSERT_NOT_NULL(ctx->root);
+    ASSERT_EQ(ctx->root->type, AST_NODE_ROOT);
+    ast_context_free(ctx);
+}
+
+TEST(ast_node_creation) {
+    AstContext *ctx = ast_context_new(NULL);
+    ASSERT_NOT_NULL(ctx);
+    
+    AstNode *node = ast_node_new(ctx, AST_NODE_MAGIC_TEST, NULL);
+    ASSERT_NOT_NULL(node);
+    ASSERT_EQ(node->type, AST_NODE_MAGIC_TEST);
+    
+    ast_context_free(ctx);
+}
+
+TEST(ast_node_identifier) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    AstNode *id = ast_node_identifier(ctx, "test_name", NULL);
+    ASSERT_NOT_NULL(id);
+    ASSERT_EQ(id->type, AST_NODE_IDENTIFIER);
+    ASSERT_STR_EQ(id->data.ident.name, "test_name");
+    
+    ast_context_free(ctx);
+}
+
+TEST(ast_node_integer_literal) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    AstNode *num = ast_node_integer(ctx, 12345, NULL);
+    ASSERT_NOT_NULL(num);
+    ASSERT_EQ(num->type, AST_NODE_LITERAL);
+    ASSERT_EQ(num->data.value.type, AST_VALUE_INT);
+    ASSERT_EQ(num->data.value.data.int_val, 12345);
+    
+    ast_context_free(ctx);
+}
+
+TEST(ast_node_string_literal) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    AstNode *str = ast_node_string(ctx, "hello", 5, NULL);
+    ASSERT_NOT_NULL(str);
+    ASSERT_EQ(str->type, AST_NODE_LITERAL);
+    ASSERT_EQ(str->data.value.type, AST_VALUE_STRING);
+    ASSERT_STR_EQ(str->data.value.data.string.data, "hello");
+    
+    ast_context_free(ctx);
+}
+
+TEST(ast_node_binary_op) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    AstNode *left = ast_node_integer(ctx, 10, NULL);
+    AstNode *right = ast_node_integer(ctx, 20, NULL);
+    AstNode *add = ast_node_binary_op(ctx, AST_OP_ADD, left, right, NULL);
+    
+    ASSERT_NOT_NULL(add);
+    ASSERT_EQ(add->type, AST_NODE_BINARY_OP);
+    ASSERT_EQ(add->data.binary.op, AST_OP_ADD);
+    ASSERT_EQ(add->num_children, 2);
+    
+    ast_context_free(ctx);
+}
+
+TEST(ast_node_children) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    AstNode *parent = ast_node_new(ctx, AST_NODE_STRUCT, NULL);
+    AstNode *child1 = ast_node_field(ctx, "field1", "int32", NULL);
+    AstNode *child2 = ast_node_field(ctx, "field2", "string", NULL);
+    
+    ASSERT(ast_node_add_child(parent, child1));
+    ASSERT(ast_node_add_child(parent, child2));
+    
+    ASSERT_EQ(parent->num_children, 2);
+    ASSERT_EQ(ast_node_get_child(parent, 0), child1);
+    ASSERT_EQ(ast_node_get_child(parent, 1), child2);
+    ASSERT_EQ(child1->parent, parent);
+    
+    /* Test remove */
+    ASSERT(ast_node_remove_child(parent, child1));
+    ASSERT_EQ(parent->num_children, 1);
+    ASSERT_NULL(child1->parent);
+    
+    ast_context_free(ctx);
+}
+
+TEST(ast_node_attributes) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    AstNode *node = ast_node_new(ctx, AST_NODE_FIELD, NULL);
+    
+    ASSERT(ast_node_set_attr(ctx, node, "optional", "true"));
+    ASSERT(ast_node_set_attr(ctx, node, "description", "A test field"));
+    
+    const char *val = ast_node_get_attr(node, "optional");
+    ASSERT_NOT_NULL(val);
+    ASSERT_STR_EQ(val, "true");
+    
+    const char *desc = ast_node_get_attr(node, "description");
+    ASSERT_NOT_NULL(desc);
+    ASSERT_STR_EQ(desc, "A test field");
+    
+    /* Non-existent attribute */
+    ASSERT_NULL(ast_node_get_attr(node, "nonexistent"));
+    
+    ast_context_free(ctx);
+}
+
+TEST(ast_node_type_names) {
+    ASSERT_STR_EQ(ast_node_type_name(AST_NODE_ROOT), "ROOT");
+    ASSERT_STR_EQ(ast_node_type_name(AST_NODE_MAGIC_TEST), "MAGIC_TEST");
+    ASSERT_STR_EQ(ast_node_type_name(AST_NODE_IDENTIFIER), "IDENTIFIER");
+    ASSERT_STR_EQ(ast_node_type_name(AST_NODE_BINARY_OP), "BINARY_OP");
+}
+
+TEST(ast_binary_op_strings) {
+    ASSERT_STR_EQ(ast_binary_op_string(AST_OP_ADD), "+");
+    ASSERT_STR_EQ(ast_binary_op_string(AST_OP_SUB), "-");
+    ASSERT_STR_EQ(ast_binary_op_string(AST_OP_EQ), "==");
+    ASSERT_STR_EQ(ast_binary_op_string(AST_OP_AND), "&&");
+}
+
+TEST(ast_symbol_table) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    AstNode *node1 = ast_node_new(ctx, AST_NODE_STRUCT, NULL);
+    AstNode *node2 = ast_node_new(ctx, AST_NODE_ENUM, NULL);
+    
+    ASSERT(ast_define_symbol(ctx, "MyStruct", node1));
+    ASSERT(ast_define_symbol(ctx, "MyEnum", node2));
+    
+    ASSERT(ast_has_symbol(ctx, "MyStruct"));
+    ASSERT(ast_has_symbol(ctx, "MyEnum"));
+    ASSERT(!ast_has_symbol(ctx, "Unknown"));
+    
+    AstNode *found = ast_lookup_symbol(ctx, "MyStruct");
+    ASSERT_EQ(found, node1);
+    
+    ast_context_free(ctx);
+}
+
+TEST(ast_node_count_and_depth) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    /* Build small tree */
+    AstNode *root = ast_node_new(ctx, AST_NODE_ROOT, NULL);
+    AstNode *child1 = ast_node_new(ctx, AST_NODE_STRUCT, NULL);
+    AstNode *child2 = ast_node_new(ctx, AST_NODE_STRUCT, NULL);
+    AstNode *grandchild = ast_node_new(ctx, AST_NODE_FIELD, NULL);
+    
+    ast_node_add_child(root, child1);
+    ast_node_add_child(root, child2);
+    ast_node_add_child(child1, grandchild);
+    
+    ASSERT_EQ(ast_node_count(root), 4);
+    ASSERT_EQ(ast_node_depth(root), 3);  /* root -> child -> grandchild */
+    
+    ast_context_free(ctx);
+}
+
+static int visit_count = 0;
+static bool test_visitor(AstNode *node, void *user_data) {
+    (void)node;
+    (void)user_data;
+    visit_count++;
+    return true;
+}
+
+TEST(ast_traversal_preorder) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    AstNode *root = ast_node_new(ctx, AST_NODE_ROOT, NULL);
+    AstNode *c1 = ast_node_new(ctx, AST_NODE_STRUCT, NULL);
+    AstNode *c2 = ast_node_new(ctx, AST_NODE_STRUCT, NULL);
+    ast_node_add_child(root, c1);
+    ast_node_add_child(root, c2);
+    
+    visit_count = 0;
+    ASSERT(ast_node_visit_preorder(root, test_visitor, NULL));
+    ASSERT_EQ(visit_count, 3);
+    
+    ast_context_free(ctx);
+}
+
+TEST(ast_traversal_postorder) {
+    AstContext *ctx = ast_context_new(NULL);
+    
+    AstNode *root = ast_node_new(ctx, AST_NODE_ROOT, NULL);
+    AstNode *c1 = ast_node_new(ctx, AST_NODE_STRUCT, NULL);
+    ast_node_add_child(root, c1);
+    
+    visit_count = 0;
+    ASSERT(ast_node_visit_postorder(root, test_visitor, NULL));
+    ASSERT_EQ(visit_count, 2);
+    
+    ast_context_free(ctx);
+}
+
+/* ============================================================
  * Test Runners
  * ============================================================ */
 
@@ -942,6 +1586,62 @@ void run_utility_tests(void) {
     RUN_TEST(utility_hash_functions);
 }
 
+void run_arena_tests(void) {
+    printf("\nArena Allocator Tests:\n");
+    RUN_TEST(arena_init_and_free);
+    RUN_TEST(arena_alloc_basic);
+    RUN_TEST(arena_alloc_large);
+    RUN_TEST(arena_calloc);
+    RUN_TEST(arena_strdup);
+    RUN_TEST(arena_reset);
+    RUN_TEST(arena_stats);
+}
+
+void run_hashtable_tests(void) {
+    printf("\nHash Table Tests:\n");
+    RUN_TEST(hashtable_init_and_free);
+    RUN_TEST(hashtable_insert_lookup);
+    RUN_TEST(hashtable_update);
+    RUN_TEST(hashtable_remove);
+    RUN_TEST(hashtable_clear);
+    RUN_TEST(hashtable_resize);
+    RUN_TEST(string_hashtable_basic);
+    RUN_TEST(hashtable_with_arena);
+    RUN_TEST(hash_functions);
+}
+
+void run_http_tests(void) {
+    printf("\nHTTP Module Tests:\n");
+    RUN_TEST(http_is_request_detection);
+    RUN_TEST(http_is_response_detection);
+    RUN_TEST(http_method_parsing);
+    RUN_TEST(http_method_string);
+    RUN_TEST(http_status_reason);
+    RUN_TEST(http_status_category);
+    RUN_TEST(http_parser_init);
+    RUN_TEST(http_parse_simple_request);
+    RUN_TEST(http_parse_response);
+    RUN_TEST(http_content_type_parsing);
+}
+
+void run_ast_tests(void) {
+    printf("\nAST Module Tests:\n");
+    RUN_TEST(ast_context_creation);
+    RUN_TEST(ast_node_creation);
+    RUN_TEST(ast_node_identifier);
+    RUN_TEST(ast_node_integer_literal);
+    RUN_TEST(ast_node_string_literal);
+    RUN_TEST(ast_node_binary_op);
+    RUN_TEST(ast_node_children);
+    RUN_TEST(ast_node_attributes);
+    RUN_TEST(ast_node_type_names);
+    RUN_TEST(ast_binary_op_strings);
+    RUN_TEST(ast_symbol_table);
+    RUN_TEST(ast_node_count_and_depth);
+    RUN_TEST(ast_traversal_preorder);
+    RUN_TEST(ast_traversal_postorder);
+}
+
 int main(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
@@ -964,6 +1664,10 @@ int main(int argc, char *argv[]) {
     run_magic_tests();            /* Test 12 */
     run_modular_tests();          /* Test 13+ */
     run_utility_tests();
+    run_arena_tests();            /* Arena allocator */
+    run_hashtable_tests();        /* Hash table */
+    run_http_tests();             /* HTTP module */
+    run_ast_tests();              /* AST module */
     
     printf("\n============================\n");
     printf("Results: %d/%d tests passed", tests_passed, tests_run);
