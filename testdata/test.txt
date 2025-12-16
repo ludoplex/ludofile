@@ -1,0 +1,2 @@
+This is a simple test file for LudoFile testing.
+It contains plain ASCII text content.

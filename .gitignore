@@ -7,6 +7,7 @@ bin/
 *.exe
 ludofile_core
 test_ludofile
+test_features
 
 # Editor files
 ~*
@@ -18,6 +19,10 @@ test_ludofile
 # OS files
 .DS_Store
 Thumbs.db
+
+# Test output
+*.tmp
+/tmp/
 
 # Other
 _codeql_detected_source_root

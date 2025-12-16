@@ -40,7 +40,7 @@ TARGET = $(BIN_DIR)/ludofile_core
 INCLUDES = -I$(SRC_DIR)
 
 # Phony targets
-.PHONY: all clean debug static install test check help
+.PHONY: all clean debug static install test check check-features check-all help
 
 # Default target
 all: $(TARGET)
@@ -92,6 +92,18 @@ check: $(ALL_OBJS) | $(BUILD_DIR) $(BIN_DIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_DIR)/test_ludofile.o $(filter-out $(BUILD_DIR)/main.o,$(ALL_OBJS)) -o $(BIN_DIR)/test_ludofile
 	@echo "Running test suite..."
 	@./$(BIN_DIR)/test_ludofile
+
+# Build and run feature tests (comprehensive README coverage)
+check-features: $(ALL_OBJS) | $(BUILD_DIR) $(BIN_DIR)
+	@echo "Building feature test suite..."
+	$(CC) $(CFLAGS) $(INCLUDES) -c tests/test_features.c -o $(BUILD_DIR)/test_features.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_DIR)/test_features.o $(filter-out $(BUILD_DIR)/main.o,$(ALL_OBJS)) -o $(BIN_DIR)/test_features
+	@echo "Running feature tests..."
+	@./$(BIN_DIR)/test_features
+
+# Run all tests
+check-all: check check-features
+	@echo "All tests completed!"
 
 # Help
 help:

@@ -1,0 +1,33 @@
+{
+    "name": "LudoFile Development",
+    "image": "mcr.microsoft.com/devcontainers/cpp:1-ubuntu-22.04",
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {},
+        "ghcr.io/devcontainers/features/git:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cmake-tools",
+                "ms-vscode.makefile-tools"
+            ],
+            "settings": {
+                "C_Cpp.default.cStandard": "c11",
+                "C_Cpp.default.includePath": [
+                    "${workspaceFolder}/src",
+                    "${workspaceFolder}/src/core",
+                    "${workspaceFolder}/src/magic",
+                    "${workspaceFolder}/src/output",
+                    "${workspaceFolder}/src/parsers"
+                ]
+            }
+        }
+    },
+    "postCreateCommand": "sudo apt-get update && sudo apt-get install -y build-essential clang cppcheck valgrind zip",
+    "remoteUser": "vscode",
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached"
+    ]
+}
