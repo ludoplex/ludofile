@@ -39,6 +39,7 @@
 #include "../src/parsers/zip.h"
 #include "../src/http/http.h"
 #include "../src/ast/ast.h"
+#include "../src/vm/vm.h"
 
 /* Test counters */
 static int tests_run = 0;
@@ -1642,6 +1643,285 @@ void run_ast_tests(void) {
     RUN_TEST(ast_traversal_postorder);
 }
 
+/* ============================================================
+ * VM Tests - Kaitai Runtime VM
+ * ============================================================ */
+
+TEST(vm_init_and_free) {
+    VM vm;
+    vm_init(&vm);
+    ASSERT_EQ(vm.sp, 0);
+    ASSERT_EQ(vm.fp, 0);
+    ASSERT(!vm.halted);
+    ASSERT_EQ(vm.error, 0);
+    vm_free(&vm);
+}
+
+TEST(vm_stack_push_pop) {
+    VM vm;
+    vm_init(&vm);
+    
+    /* Push integers */
+    ASSERT_EQ(vm_push_int(&vm, 42), 0);
+    ASSERT_EQ(vm_push_int(&vm, -100), 0);
+    ASSERT_EQ(vm.sp, 2);
+    
+    /* Pop and verify */
+    VMValue v = vm_pop(&vm);
+    ASSERT_EQ(v.type, VAL_INT);
+    ASSERT_EQ(v.as.i64, -100);
+    
+    v = vm_pop(&vm);
+    ASSERT_EQ(v.type, VAL_INT);
+    ASSERT_EQ(v.as.i64, 42);
+    
+    ASSERT_EQ(vm.sp, 0);
+    vm_free(&vm);
+}
+
+TEST(vm_stack_push_types) {
+    VM vm;
+    vm_init(&vm);
+    
+    /* Push different types */
+    ASSERT_EQ(vm_push_uint(&vm, 0xFFFFFFFF), 0);
+    ASSERT_EQ(vm_push_float(&vm, 3.14159), 0);
+    ASSERT_EQ(vm_push_string(&vm, "hello", 5), 0);
+    
+    ASSERT_EQ(vm.sp, 3);
+    
+    /* Check peek */
+    VMValue v = vm_peek(&vm, 0);
+    ASSERT_EQ(v.type, VAL_STRING);
+    ASSERT_STR_EQ(v.as.str.data, "hello");
+    
+    v = vm_peek(&vm, 1);
+    ASSERT_EQ(v.type, VAL_FLOAT);
+    
+    v = vm_peek(&vm, 2);
+    ASSERT_EQ(v.type, VAL_UINT);
+    ASSERT_EQ(v.as.u64, 0xFFFFFFFF);
+    
+    vm_free(&vm);
+}
+
+TEST(vm_stream_operations) {
+    VM vm;
+    vm_init(&vm);
+    
+    uint8_t data[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+    vm_set_stream(&vm, data, sizeof(data));
+    
+    ASSERT_EQ(vm_stream_size(&vm), 8);
+    ASSERT_EQ(vm_stream_pos(&vm), 0);
+    
+    /* Read u8 */
+    ASSERT_EQ(vm_read_u8(&vm), 0x01);
+    ASSERT_EQ(vm_stream_pos(&vm), 1);
+    
+    /* Seek */
+    ASSERT_EQ(vm_stream_seek(&vm, 4), 0);
+    ASSERT_EQ(vm_stream_pos(&vm), 4);
+    ASSERT_EQ(vm_read_u8(&vm), 0x05);
+    
+    /* Reset to start */
+    ASSERT_EQ(vm_stream_seek(&vm, 0), 0);
+    
+    vm_free(&vm);
+}
+
+TEST(vm_read_integers) {
+    VM vm;
+    vm_init(&vm);
+    
+    /* Little-endian test data */
+    uint8_t data[] = {
+        0x12,                         /* u8 = 0x12 */
+        0x34, 0x12,                   /* u16 le = 0x1234 */
+        0x78, 0x56, 0x34, 0x12,       /* u32 le = 0x12345678 */
+    };
+    vm_set_stream(&vm, data, sizeof(data));
+    vm.big_endian = false;
+    
+    ASSERT_EQ(vm_read_u8(&vm), 0x12);
+    ASSERT_EQ(vm_read_u16(&vm), 0x1234);
+    ASSERT_EQ(vm_read_u32(&vm), 0x12345678);
+    
+    vm_free(&vm);
+}
+
+TEST(vm_read_big_endian) {
+    VM vm;
+    vm_init(&vm);
+    
+    /* Big-endian test data */
+    uint8_t data[] = {
+        0x12, 0x34,                   /* u16 be = 0x1234 */
+        0x12, 0x34, 0x56, 0x78,       /* u32 be = 0x12345678 */
+    };
+    vm_set_stream(&vm, data, sizeof(data));
+    vm.big_endian = true;
+    
+    ASSERT_EQ(vm_read_u16(&vm), 0x1234);
+    ASSERT_EQ(vm_read_u32(&vm), 0x12345678);
+    
+    vm_free(&vm);
+}
+
+TEST(vm_bytecode_arithmetic) {
+    VM vm;
+    vm_init(&vm);
+    
+    /* Bytecode: PUSH 10, PUSH 5, ADD, HALT */
+    uint8_t code[] = {
+        OP_PUSH, 10, 0, 0, 0, 0, 0, 0, 0,  /* Push 10 */
+        OP_PUSH, 5, 0, 0, 0, 0, 0, 0, 0,   /* Push 5 */
+        OP_ADD,                             /* Add */
+        OP_HALT                             /* Halt */
+    };
+    vm_set_bytecode(&vm, code, sizeof(code));
+    
+    ASSERT_EQ(vm_run(&vm), 0);
+    ASSERT(vm.halted);
+    ASSERT_EQ(vm.sp, 1);
+    
+    VMValue v = vm_pop(&vm);
+    ASSERT_EQ(v.as.i64, 15);
+    
+    vm_free(&vm);
+}
+
+TEST(vm_bytecode_comparison) {
+    VM vm;
+    vm_init(&vm);
+    
+    /* Bytecode: PUSH 10, PUSH 10, EQ, HALT */
+    uint8_t code[] = {
+        OP_PUSH, 10, 0, 0, 0, 0, 0, 0, 0,
+        OP_PUSH, 10, 0, 0, 0, 0, 0, 0, 0,
+        OP_EQ,
+        OP_HALT
+    };
+    vm_set_bytecode(&vm, code, sizeof(code));
+    
+    ASSERT_EQ(vm_run(&vm), 0);
+    
+    VMValue v = vm_pop(&vm);
+    ASSERT_EQ(v.as.i64, 1);  /* Equal */
+    
+    vm_free(&vm);
+}
+
+TEST(vm_bytecode_read_stream) {
+    VM vm;
+    vm_init(&vm);
+    
+    /* Stream data */
+    uint8_t data[] = { 0xCA, 0xFE, 0xBA, 0xBE };
+    vm_set_stream(&vm, data, sizeof(data));
+    
+    /* Bytecode: BE (big-endian), READ_U32, HALT */
+    uint8_t code[] = {
+        OP_ENDIAN_BE, /* BE - set big endian */
+        OP_READ_U32,  /* Read u32 */
+        OP_HALT
+    };
+    vm_set_bytecode(&vm, code, sizeof(code));
+    
+    ASSERT_EQ(vm_run(&vm), 0);
+    
+    VMValue v = vm_pop(&vm);
+    ASSERT_EQ(v.as.u64, 0xCAFEBABE);
+    
+    vm_free(&vm);
+}
+
+TEST(vm_bytecode_jump) {
+    VM vm;
+    vm_init(&vm);
+    
+    /* Bytecode: PUSH 1, JMP +9, PUSH 99, PUSH 2, HALT 
+     * Should skip the PUSH 99 */
+    uint8_t code[] = {
+        OP_PUSH, 1, 0, 0, 0, 0, 0, 0, 0,   /* offset 0: Push 1 */
+        OP_JMP, 18, 0, 0, 0,                /* offset 9: Jump to 18 */
+        OP_PUSH, 99, 0, 0, 0, 0, 0, 0, 0,  /* offset 14: Push 99 (skipped) */
+        OP_PUSH, 2, 0, 0, 0, 0, 0, 0, 0,   /* offset 23: Push 2 */
+        OP_HALT                             /* offset 32: Halt */
+    };
+    /* Fix: JMP to offset 23 (where PUSH 2 is) */
+    code[10] = 23;
+    
+    vm_set_bytecode(&vm, code, sizeof(code));
+    ASSERT_EQ(vm_run(&vm), 0);
+    
+    /* Should have 1 and 2 on stack, not 99 */
+    ASSERT_EQ(vm.sp, 2);
+    VMValue v = vm_pop(&vm);
+    ASSERT_EQ(v.as.i64, 2);
+    v = vm_pop(&vm);
+    ASSERT_EQ(v.as.i64, 1);
+    
+    vm_free(&vm);
+}
+
+TEST(vm_type_registration) {
+    VM vm;
+    vm_init(&vm);
+    
+    VMFieldDef fields[] = {
+        { .name = "magic", .type_id = 0 },
+        { .name = "version", .type_id = 0 },
+    };
+    
+    uint8_t bytecode[] = { OP_READ_U32, OP_READ_U16, OP_HALT };
+    
+    VMTypeDef type = {
+        .name = "Header",
+        .fields = fields,
+        .num_fields = 2,
+        .bytecode = bytecode,
+        .bytecode_len = sizeof(bytecode),
+    };
+    
+    int id = vm_register_type(&vm, &type);
+    ASSERT(id >= 0);
+    
+    const VMTypeDef *found = vm_get_type(&vm, "Header");
+    ASSERT_NOT_NULL(found);
+    ASSERT_STR_EQ(found->name, "Header");
+    ASSERT_EQ(found->num_fields, 2);
+    
+    const VMTypeDef *by_id = vm_get_type_by_id(&vm, (uint16_t)id);
+    ASSERT_EQ(by_id, found);
+    
+    vm_free(&vm);
+}
+
+TEST(vm_opcode_names) {
+    ASSERT_STR_EQ(vm_opcode_name(OP_NOP), "NOP");
+    ASSERT_STR_EQ(vm_opcode_name(OP_PUSH), "PUSH");
+    ASSERT_STR_EQ(vm_opcode_name(OP_ADD), "ADD");
+    ASSERT_STR_EQ(vm_opcode_name(OP_READ_U32), "READ_U32");
+    ASSERT_STR_EQ(vm_opcode_name(OP_HALT), "HALT");
+}
+
+void run_vm_tests(void) {
+    printf("\nVM (Kaitai Runtime) Tests:\n");
+    RUN_TEST(vm_init_and_free);
+    RUN_TEST(vm_stack_push_pop);
+    RUN_TEST(vm_stack_push_types);
+    RUN_TEST(vm_stream_operations);
+    RUN_TEST(vm_read_integers);
+    RUN_TEST(vm_read_big_endian);
+    RUN_TEST(vm_bytecode_arithmetic);
+    RUN_TEST(vm_bytecode_comparison);
+    RUN_TEST(vm_bytecode_read_stream);
+    RUN_TEST(vm_bytecode_jump);
+    RUN_TEST(vm_type_registration);
+    RUN_TEST(vm_opcode_names);
+}
+
 int main(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
@@ -1668,6 +1948,7 @@ int main(int argc, char *argv[]) {
     run_hashtable_tests();        /* Hash table */
     run_http_tests();             /* HTTP module */
     run_ast_tests();              /* AST module */
+    run_vm_tests();               /* VM module */
     
     printf("\n============================\n");
     printf("Results: %d/%d tests passed", tests_passed, tests_run);

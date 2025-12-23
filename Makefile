@@ -22,9 +22,10 @@ OUTPUT_SRCS = $(SRC_DIR)/output/output.c
 PARSER_SRCS = $(SRC_DIR)/parsers/parser.c $(SRC_DIR)/parsers/pdf.c $(SRC_DIR)/parsers/zip.c
 HTTP_SRCS = $(SRC_DIR)/http/http.c
 AST_SRCS = $(SRC_DIR)/ast/ast.c
+VM_SRCS = $(SRC_DIR)/vm/vm.c
 MAIN_SRCS = $(SRC_DIR)/main.c
 
-ALL_SRCS = $(CORE_SRCS) $(MAGIC_SRCS) $(OUTPUT_SRCS) $(PARSER_SRCS) $(HTTP_SRCS) $(AST_SRCS) $(MAIN_SRCS)
+ALL_SRCS = $(CORE_SRCS) $(MAGIC_SRCS) $(OUTPUT_SRCS) $(PARSER_SRCS) $(HTTP_SRCS) $(AST_SRCS) $(VM_SRCS) $(MAIN_SRCS)
 
 # Object files
 CORE_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(CORE_SRCS))
@@ -33,9 +34,10 @@ OUTPUT_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(OUTPUT_SRCS))
 PARSER_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(PARSER_SRCS))
 HTTP_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(HTTP_SRCS))
 AST_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(AST_SRCS))
+VM_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(VM_SRCS))
 MAIN_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(MAIN_SRCS))
 
-ALL_OBJS = $(CORE_OBJS) $(MAGIC_OBJS) $(OUTPUT_OBJS) $(PARSER_OBJS) $(HTTP_OBJS) $(AST_OBJS) $(MAIN_OBJS)
+ALL_OBJS = $(CORE_OBJS) $(MAGIC_OBJS) $(OUTPUT_OBJS) $(PARSER_OBJS) $(HTTP_OBJS) $(AST_OBJS) $(VM_OBJS) $(MAIN_OBJS)
 
 # Target binary
 TARGET = $(BIN_DIR)/ludofile_core
@@ -51,7 +53,7 @@ all: $(TARGET)
 
 # Create directories
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)/core $(BUILD_DIR)/magic $(BUILD_DIR)/output $(BUILD_DIR)/parsers $(BUILD_DIR)/http $(BUILD_DIR)/ast
+	mkdir -p $(BUILD_DIR)/core $(BUILD_DIR)/magic $(BUILD_DIR)/output $(BUILD_DIR)/parsers $(BUILD_DIR)/http $(BUILD_DIR)/ast $(BUILD_DIR)/vm
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
