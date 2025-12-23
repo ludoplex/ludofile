@@ -370,37 +370,57 @@ uint8_t vm_read_u8(VM *vm) {
 }
 
 uint16_t vm_read_u16(VM *vm) {
-    uint16_t v;
-    if (vm_stream_read_raw(vm, (uint8_t *)&v, 2) < 0) {
+    uint8_t buf[2];
+    if (vm_stream_read_raw(vm, buf, 2) < 0) {
         return 0;
     }
-    bool host_be = host_is_big_endian();
-    if (vm->big_endian != host_be) {
-        v = swap16(v);
+    uint16_t v;
+    if (vm->big_endian) {
+        /* Big-endian: MSB first */
+        v = ((uint16_t)buf[0] << 8) | (uint16_t)buf[1];
+    } else {
+        /* Little-endian: LSB first */
+        v = (uint16_t)buf[0] | ((uint16_t)buf[1] << 8);
     }
     return v;
 }
 
 uint32_t vm_read_u32(VM *vm) {
-    uint32_t v;
-    if (vm_stream_read_raw(vm, (uint8_t *)&v, 4) < 0) {
+    uint8_t buf[4];
+    if (vm_stream_read_raw(vm, buf, 4) < 0) {
         return 0;
     }
-    bool host_be = host_is_big_endian();
-    if (vm->big_endian != host_be) {
-        v = swap32(v);
+    uint32_t v;
+    if (vm->big_endian) {
+        /* Big-endian: MSB first */
+        v = ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16) |
+            ((uint32_t)buf[2] << 8)  | (uint32_t)buf[3];
+    } else {
+        /* Little-endian: LSB first */
+        v = (uint32_t)buf[0] | ((uint32_t)buf[1] << 8) |
+            ((uint32_t)buf[2] << 16) | ((uint32_t)buf[3] << 24);
     }
     return v;
 }
 
 uint64_t vm_read_u64(VM *vm) {
-    uint64_t v;
-    if (vm_stream_read_raw(vm, (uint8_t *)&v, 8) < 0) {
+    uint8_t buf[8];
+    if (vm_stream_read_raw(vm, buf, 8) < 0) {
         return 0;
     }
-    bool host_be = host_is_big_endian();
-    if (vm->big_endian != host_be) {
-        v = swap64(v);
+    uint64_t v;
+    if (vm->big_endian) {
+        /* Big-endian: MSB first */
+        v = ((uint64_t)buf[0] << 56) | ((uint64_t)buf[1] << 48) |
+            ((uint64_t)buf[2] << 40) | ((uint64_t)buf[3] << 32) |
+            ((uint64_t)buf[4] << 24) | ((uint64_t)buf[5] << 16) |
+            ((uint64_t)buf[6] << 8)  | (uint64_t)buf[7];
+    } else {
+        /* Little-endian: LSB first */
+        v = (uint64_t)buf[0] | ((uint64_t)buf[1] << 8) |
+            ((uint64_t)buf[2] << 16) | ((uint64_t)buf[3] << 24) |
+            ((uint64_t)buf[4] << 32) | ((uint64_t)buf[5] << 40) |
+            ((uint64_t)buf[6] << 48) | ((uint64_t)buf[7] << 56);
     }
     return v;
 }
@@ -639,12 +659,20 @@ int vm_step(VM *vm) {
     /* Control flow */
     case OP_JMP: {
         int32_t off = (int32_t)read_imm32(vm);
+        if (off < 0 || (size_t)off >= vm->code_len) {
+            vm_error(vm, VM_ERR_BOUNDS, "jump target out of bounds");
+            return -1;
+        }
         vm->ip = vm->code + off;
         break;
     }
     
     case OP_JZ: {
         int32_t off = (int32_t)read_imm32(vm);
+        if (off < 0 || (size_t)off >= vm->code_len) {
+            vm_error(vm, VM_ERR_BOUNDS, "jump target out of bounds");
+            return -1;
+        }
         a = vm_pop(vm);
         if (a.as.i64 == 0) {
             vm->ip = vm->code + off;
@@ -654,6 +682,10 @@ int vm_step(VM *vm) {
     
     case OP_JNZ: {
         int32_t off = (int32_t)read_imm32(vm);
+        if (off < 0 || (size_t)off >= vm->code_len) {
+            vm_error(vm, VM_ERR_BOUNDS, "jump target out of bounds");
+            return -1;
+        }
         a = vm_pop(vm);
         if (a.as.i64 != 0) {
             vm->ip = vm->code + off;
@@ -667,6 +699,10 @@ int vm_step(VM *vm) {
             return -1;
         }
         int32_t off = (int32_t)read_imm32(vm);
+        if (off < 0 || (size_t)off >= vm->code_len) {
+            vm_error(vm, VM_ERR_BOUNDS, "call target out of bounds");
+            return -1;
+        }
         vm->frames[vm->fp].ret_addr = vm->ip;
         vm->frames[vm->fp].stack_base = vm->sp;
         vm->fp++;
