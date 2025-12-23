@@ -87,7 +87,11 @@ LudoFile is organized into modular C components:
 src/
 ├── core/           Core types and utilities
 │   ├── types.h     Data structure definitions
-│   └── types.c     Core type implementations
+│   ├── types.c     Core type implementations
+│   ├── arena.h     Arena allocator interface
+│   ├── arena.c     Bump allocator with dynamic extension
+│   ├── hashtable.h Hash table interface
+│   └── hashtable.c Robin Hood hash table with SIMD acceleration
 ├── magic/          Magic pattern matching engine
 │   ├── magic.h     Magic matcher interface
 │   └── magic.c     Pattern matching implementation
@@ -99,6 +103,12 @@ src/
 │   ├── parser.c    Parser registry
 │   ├── pdf.h/c     PDF document parser
 │   └── zip.h/c     ZIP archive parser
+├── http/           HTTP protocol handling
+│   ├── http.h      HTTP/1.1 protocol interface
+│   └── http.c      Request/response parsing
+├── ast/            Abstract syntax tree
+│   ├── ast.h       AST node types and traversal
+│   └── ast.c       Parser definition structures
 └── main.c          Main entry point
 
 scripts/
@@ -108,10 +118,12 @@ scripts/
 
 ### Modules
 
-- **Core** (`src/core/`): Fundamental data types including ByteBuffer, StringBuffer, FileStream, Offset, MatchResult, and ParseMatch
+- **Core** (`src/core/`): Fundamental data types including ByteBuffer, StringBuffer, FileStream, Offset, MatchResult, ParseMatch, Arena allocator with bump allocation, and high-performance hash tables with Robin Hood probing
 - **Magic** (`src/magic/`): libmagic-compatible pattern matching with support for numeric, string, regex, and search tests
 - **Output** (`src/output/`): Output formatters for JSON/SBUD, HTML hex viewer, and file/MIME formats
 - **Parsers** (`src/parsers/`): File format parsers with plugin interface for PDF, ZIP, and JAR files
+- **HTTP** (`src/http/`): HTTP/1.1 request/response parsing, structured headers (RFC 8941), and protocol detection
+- **AST** (`src/ast/`): Abstract syntax tree for parser definitions with node types, traversal utilities, and symbol tables
 
 ## Output Formats
 
