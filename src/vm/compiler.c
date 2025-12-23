@@ -29,6 +29,19 @@ static void default_free(void *ctx, void *ptr) {
     free(ptr);
 }
 
+/* POSIX-compliant string duplication */
+static char *safe_strdup(const char *str) {
+    if (!str) {
+        return NULL;
+    }
+    size_t len = strlen(str) + 1;
+    char *dup = malloc(len);
+    if (dup) {
+        memcpy(dup, str, len);
+    }
+    return dup;
+}
+
 /* ============================================================================
  * Compilation
  * ============================================================================ */
@@ -89,7 +102,7 @@ CompiledKSY *ksy_compile_file(const char *path) {
     free(content);
     
     if (compiled) {
-        compiled->ksy_path = strdup(path);
+        compiled->ksy_path = safe_strdup(path);
     }
     
     return compiled;

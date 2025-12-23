@@ -26,6 +26,19 @@ static void default_free(void *ctx, void *ptr) {
     free(ptr);
 }
 
+/* POSIX-compliant string duplication */
+static char *safe_strdup(const char *str) {
+    if (!str) {
+        return NULL;
+    }
+    size_t len = strlen(str) + 1;
+    char *dup = malloc(len);
+    if (dup) {
+        memcpy(dup, str, len);
+    }
+    return dup;
+}
+
 static void print_prompt(void) {
     printf("ludofile> ");
     fflush(stdout);
@@ -183,7 +196,7 @@ int repl_cmd_open(REPLContext *ctx, const char *path) {
     fclose(fp);
     
     ctx->file_size = read;
-    ctx->current_file = strdup(path);
+    ctx->current_file = safe_strdup(path);
     
     printf("Opened '%s' (%zu bytes)\n", path, ctx->file_size);
     

@@ -454,20 +454,34 @@ TaintDAG *taint_dag_load(const char *path) {
         uint32_t name_len;
         uint8_t hash[32];
         
-        fread(&source_id, sizeof(uint32_t), 1, fp);
-        fread(&size, sizeof(size_t), 1, fp);
-        fread(&name_len, sizeof(uint32_t), 1, fp);
+        if (fread(&source_id, sizeof(uint32_t), 1, fp) != 1 ||
+            fread(&size, sizeof(size_t), 1, fp) != 1 ||
+            fread(&name_len, sizeof(uint32_t), 1, fp) != 1) {
+            taint_dag_free(dag);
+            fclose(fp);
+            return NULL;
+        }
         
         char *name = NULL;
         if (name_len > 0) {
             name = malloc(name_len + 1);
             if (name) {
-                fread(name, 1, name_len, fp);
+                if (fread(name, 1, name_len, fp) != name_len) {
+                    free(name);
+                    taint_dag_free(dag);
+                    fclose(fp);
+                    return NULL;
+                }
                 name[name_len] = '\0';
             }
         }
         
-        fread(hash, 1, 32, fp);
+        if (fread(hash, 1, 32, fp) != 32) {
+            if (name) free(name);
+            taint_dag_free(dag);
+            fclose(fp);
+            return NULL;
+        }
         
         taint_dag_add_source(dag, name, size, hash);
         
@@ -487,18 +501,34 @@ TaintDAG *taint_dag_load(const char *path) {
     for (uint32_t i = 0; i < num_taints; i++) {
         Taint taint;
         
-        fread(&taint.type, sizeof(TaintType), 1, fp);
-        fread(&taint.affects_control_flow, sizeof(bool), 1, fp);
+        if (fread(&taint.type, sizeof(TaintType), 1, fp) != 1 ||
+            fread(&taint.affects_control_flow, sizeof(bool), 1, fp) != 1) {
+            taint_dag_free(dag);
+            fclose(fp);
+            return NULL;
+        }
         
         switch (taint.type) {
             case TAINT_SOURCE:
-                fread(&taint.data.source, sizeof(SourceTaint), 1, fp);
+                if (fread(&taint.data.source, sizeof(SourceTaint), 1, fp) != 1) {
+                    taint_dag_free(dag);
+                    fclose(fp);
+                    return NULL;
+                }
                 break;
             case TAINT_RANGE:
-                fread(&taint.data.range, sizeof(RangeTaint), 1, fp);
+                if (fread(&taint.data.range, sizeof(RangeTaint), 1, fp) != 1) {
+                    taint_dag_free(dag);
+                    fclose(fp);
+                    return NULL;
+                }
                 break;
             case TAINT_UNION:
-                fread(&taint.data.tunion, sizeof(UnionTaint), 1, fp);
+                if (fread(&taint.data.tunion, sizeof(UnionTaint), 1, fp) != 1) {
+                    taint_dag_free(dag);
+                    fclose(fp);
+                    return NULL;
+                }
                 break;
         }
         

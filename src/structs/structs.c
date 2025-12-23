@@ -12,6 +12,23 @@
 #include <string.h>
 
 /* ============================================================================
+ * Internal helpers
+ * ============================================================================ */
+
+/* POSIX-compliant string duplication */
+static char *safe_strdup(const char *str) {
+    if (!str) {
+        return NULL;
+    }
+    size_t len = strlen(str) + 1;
+    char *dup = malloc(len);
+    if (dup) {
+        memcpy(dup, str, len);
+    }
+    return dup;
+}
+
+/* ============================================================================
  * Structure definition
  * ============================================================================ */
 
@@ -23,7 +40,7 @@ StructDef *struct_def_new(const char *name) {
     
     memset(def, 0, sizeof(*def));
     if (name) {
-        def->name = strdup(name);
+        def->name = safe_strdup(name);
     }
     
     return def;
