@@ -155,7 +155,7 @@ TEST(kaitai_find_format) {
 }
 
 TEST(kaitai_formats_count) {
-    ASSERT_EQ(KAITAI_FORMATS_COUNT, 3);  /* GIF, PNG, JPEG */
+    ASSERT_EQ(KAITAI_FORMATS_COUNT, 8);  /* GIF, PNG, JPEG, PDF, ZIP, ELF, PE, Mach-O */
 }
 
 /* ============= Structs Tests ============= */
