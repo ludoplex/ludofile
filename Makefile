@@ -22,10 +22,15 @@ OUTPUT_SRCS = $(SRC_DIR)/output/output.c
 PARSER_SRCS = $(SRC_DIR)/parsers/parser.c $(SRC_DIR)/parsers/pdf.c $(SRC_DIR)/parsers/zip.c
 HTTP_SRCS = $(SRC_DIR)/http/http.c
 AST_SRCS = $(SRC_DIR)/ast/ast.c
-VM_SRCS = $(SRC_DIR)/vm/vm.c
+VM_SRCS = $(SRC_DIR)/vm/vm.c $(SRC_DIR)/vm/compiler.c
+TAINT_SRCS = $(SRC_DIR)/taint/taint.c
+DEBUG_SRCS = $(SRC_DIR)/debug/debugger.c
+KAITAI_SRCS = $(SRC_DIR)/kaitai/formats.c
+STRUCTS_SRCS = $(SRC_DIR)/structs/structs.c
+REPL_SRCS = $(SRC_DIR)/repl/repl.c
 MAIN_SRCS = $(SRC_DIR)/main.c
 
-ALL_SRCS = $(CORE_SRCS) $(MAGIC_SRCS) $(OUTPUT_SRCS) $(PARSER_SRCS) $(HTTP_SRCS) $(AST_SRCS) $(VM_SRCS) $(MAIN_SRCS)
+ALL_SRCS = $(CORE_SRCS) $(MAGIC_SRCS) $(OUTPUT_SRCS) $(PARSER_SRCS) $(HTTP_SRCS) $(AST_SRCS) $(VM_SRCS) $(TAINT_SRCS) $(DEBUG_SRCS) $(KAITAI_SRCS) $(STRUCTS_SRCS) $(REPL_SRCS) $(MAIN_SRCS)
 
 # Object files
 CORE_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(CORE_SRCS))
@@ -35,9 +40,14 @@ PARSER_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(PARSER_SRCS))
 HTTP_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(HTTP_SRCS))
 AST_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(AST_SRCS))
 VM_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(VM_SRCS))
+TAINT_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(TAINT_SRCS))
+DEBUG_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(DEBUG_SRCS))
+KAITAI_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(KAITAI_SRCS))
+STRUCTS_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(STRUCTS_SRCS))
+REPL_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(REPL_SRCS))
 MAIN_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(MAIN_SRCS))
 
-ALL_OBJS = $(CORE_OBJS) $(MAGIC_OBJS) $(OUTPUT_OBJS) $(PARSER_OBJS) $(HTTP_OBJS) $(AST_OBJS) $(VM_OBJS) $(MAIN_OBJS)
+ALL_OBJS = $(CORE_OBJS) $(MAGIC_OBJS) $(OUTPUT_OBJS) $(PARSER_OBJS) $(HTTP_OBJS) $(AST_OBJS) $(VM_OBJS) $(TAINT_OBJS) $(DEBUG_OBJS) $(KAITAI_OBJS) $(STRUCTS_OBJS) $(REPL_OBJS) $(MAIN_OBJS)
 
 # Target binary
 TARGET = $(BIN_DIR)/ludofile_core
@@ -46,14 +56,14 @@ TARGET = $(BIN_DIR)/ludofile_core
 INCLUDES = -I$(SRC_DIR)
 
 # Phony targets
-.PHONY: all clean debug static install test check check-features check-all help
+.PHONY: all clean debug static install test check check-features check-polyfile check-all help
 
 # Default target
 all: $(TARGET)
 
 # Create directories
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)/core $(BUILD_DIR)/magic $(BUILD_DIR)/output $(BUILD_DIR)/parsers $(BUILD_DIR)/http $(BUILD_DIR)/ast $(BUILD_DIR)/vm
+	mkdir -p $(BUILD_DIR)/core $(BUILD_DIR)/magic $(BUILD_DIR)/output $(BUILD_DIR)/parsers $(BUILD_DIR)/http $(BUILD_DIR)/ast $(BUILD_DIR)/vm $(BUILD_DIR)/taint $(BUILD_DIR)/debug $(BUILD_DIR)/kaitai $(BUILD_DIR)/structs $(BUILD_DIR)/repl
 
 $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
@@ -107,8 +117,16 @@ check-features: $(ALL_OBJS) | $(BUILD_DIR) $(BIN_DIR)
 	@echo "Running feature tests..."
 	@./$(BIN_DIR)/test_features
 
+# Build and run PolyFile feature parity tests
+check-polyfile: $(ALL_OBJS) | $(BUILD_DIR) $(BIN_DIR)
+	@echo "Building PolyFile feature parity test suite..."
+	$(CC) $(CFLAGS) $(INCLUDES) -c tests/test_polyfile_features.c -o $(BUILD_DIR)/test_polyfile_features.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_DIR)/test_polyfile_features.o $(filter-out $(BUILD_DIR)/main.o,$(ALL_OBJS)) -o $(BIN_DIR)/test_polyfile_features
+	@echo "Running PolyFile feature parity tests..."
+	@./$(BIN_DIR)/test_polyfile_features
+
 # Run all tests
-check-all: check check-features
+check-all: check check-features check-polyfile
 	@echo "All tests completed!"
 
 # Help
