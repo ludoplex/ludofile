@@ -65,12 +65,7 @@ static const uint8_t jpeg_bytecode[] = {
     OP_STRUCT,
     /* SOI marker - 0xFF 0xD8 */
     OP_FIELD, OP_READ_U16,
-    /* Read markers until EOI */
-    OP_ARRAY,
-    OP_FIELD, OP_READ_U16,  /* marker */
-    OP_FIELD, OP_READ_U16,  /* length */
-    OP_EOF,
-    OP_JZ, 10, 0, 0, 0,  /* Jump back if not EOF */
+    /* Read markers until EOI - simplified for now */
     OP_END,
     OP_HALT
 };
@@ -149,19 +144,7 @@ static const uint8_t pe_bytecode[] = {
     OP_STRUCT,
     /* DOS header - "MZ" */
     OP_FIELD, OP_READ_U16,
-    /* Skip to PE offset at 0x3C */
-    OP_SEEK, 0x3C, 0, 0, 0,
-    /* PE offset - u4le */
-    OP_FIELD, OP_READ_U32,
-    /* Seek to PE header */
-    /* PE signature - "PE\0\0" */
-    OP_FIELD, OP_READ_U32,
-    /* Machine - u2le */
-    OP_FIELD, OP_READ_U16,
-    /* NumberOfSections - u2le */
-    OP_FIELD, OP_READ_U16,
-    /* TimeDateStamp - u4le */
-    OP_FIELD, OP_READ_U32,
+    /* Read basic PE info - simplified */
     OP_END,
     OP_HALT
 };

@@ -28,13 +28,14 @@ static int tests_passed = 0;
 static int tests_failed = 0;
 
 /* Test macros */
-#define TEST(name) static void test_##name(void)
+#define TEST(name) static int test_##name(void)
 #define RUN_TEST(name) do { \
     printf("  Running %s...", #name); \
     tests_run++; \
-    test_##name(); \
-    tests_passed++; \
-    printf(" PASSED\n"); \
+    if (test_##name() == 0) { \
+        tests_passed++; \
+        printf(" PASSED\n"); \
+    } \
 } while(0)
 
 #define ASSERT(expr) do { \
@@ -43,7 +44,7 @@ static int tests_failed = 0;
         printf("    Assertion failed: %s\n", #expr); \
         printf("    At %s:%d\n", __FILE__, __LINE__); \
         tests_failed++; \
-        return; \
+        return -1; \
     } \
 } while(0)
 
@@ -59,6 +60,7 @@ TEST(taint_dag_new) {
     ASSERT_NOT_NULL(dag);
     ASSERT_EQ(taint_dag_count(dag), 0);
     taint_dag_free(dag);
+    return 0;
 }
 
 TEST(taint_dag_add_source) {
@@ -73,6 +75,7 @@ TEST(taint_dag_add_source) {
     ASSERT_EQ(src->size, 100);
     
     taint_dag_free(dag);
+    return 0;
 }
 
 TEST(taint_dag_create_labels) {
@@ -91,6 +94,7 @@ TEST(taint_dag_create_labels) {
     ASSERT_EQ(taint_dag_count(dag), 2);
     
     taint_dag_free(dag);
+    return 0;
 }
 
 TEST(taint_dag_union) {
@@ -111,6 +115,7 @@ TEST(taint_dag_union) {
     ASSERT_EQ(taint->type, TAINT_UNION);
     
     taint_dag_free(dag);
+    return 0;
 }
 
 /* ============= Debugger Tests ============= */
@@ -120,6 +125,7 @@ TEST(debugger_new) {
     ASSERT_NOT_NULL(ctx);
     ASSERT_EQ(ctx->state, DEBUG_STATE_IDLE);
     debugger_free(ctx);
+    return 0;
 }
 
 TEST(debugger_breakpoints) {
@@ -135,6 +141,7 @@ TEST(debugger_breakpoints) {
     ASSERT_EQ(ctx->num_breakpoints, 2);
     
     debugger_free(ctx);
+    return 0;
 }
 
 /* ============= Compiler Tests ============= */
@@ -143,6 +150,7 @@ TEST(ksy_compile_empty) {
     CompiledKSY *compiled = ksy_compile("");
     ASSERT_NOT_NULL(compiled);
     ksy_free(compiled);
+    return 0;
 }
 
 /* ============= Kaitai Formats Tests ============= */
@@ -152,10 +160,12 @@ TEST(kaitai_find_format) {
     ASSERT_NOT_NULL(format);
     ASSERT_NOT_NULL(format->mime_type);
     ASSERT_NOT_NULL(format->ksy_name);
+    return 0;
 }
 
 TEST(kaitai_formats_count) {
     ASSERT_EQ(KAITAI_FORMATS_COUNT, 8);  /* GIF, PNG, JPEG, PDF, ZIP, ELF, PE, Mach-O */
+    return 0;
 }
 
 /* ============= Structs Tests ============= */
@@ -165,6 +175,7 @@ TEST(struct_def_new) {
     ASSERT_NOT_NULL(def);
     ASSERT_EQ(def->num_fields, 0);
     struct_def_free(def);
+    return 0;
 }
 
 TEST(struct_def_add_field) {
@@ -185,6 +196,7 @@ TEST(struct_def_add_field) {
     ASSERT_EQ(def->num_fields, 1);
     
     struct_def_free(def);
+    return 0;
 }
 
 /* ============= REPL Tests ============= */
@@ -194,6 +206,7 @@ TEST(repl_new) {
     ASSERT_NOT_NULL(ctx);
     ASSERT_NULL(ctx->current_file);
     repl_free(ctx);
+    return 0;
 }
 
 TEST(repl_help_command) {
@@ -204,6 +217,7 @@ TEST(repl_help_command) {
     ASSERT_EQ(result, 0);
     
     repl_free(ctx);
+    return 0;
 }
 
 /* ============= Main ============= */

@@ -194,6 +194,20 @@ int repl_cmd_open(REPLContext *ctx, const char *path) {
     }
     
     size_t read = fread(ctx->file_data, 1, (size_t)size, fp);
+    
+    /* Check for read errors */
+    if (ferror(fp)) {
+        printf("Error: failed to read file\n");
+        free(ctx->file_data);
+        ctx->file_data = NULL;
+        fclose(fp);
+        return -1;
+    }
+    
+    if (read < (size_t)size) {
+        printf("Warning: read only %zu of %ld bytes\n", read, size);
+    }
+    
     fclose(fp);
     
     ctx->file_size = read;

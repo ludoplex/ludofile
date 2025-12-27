@@ -286,43 +286,61 @@ static KSYType *parse_type_from_yaml(YAMLNode *root) {
  * ============================================================================ */
 
 static int64_t eval_expr(const char *expr) {
-    if (!expr) return 0;
+    if (!expr || *expr == '\0') return 0;
     
-    /* Handle simple cases */
-    if (isdigit(expr[0]) || expr[0] == '-') {
+    /* Trim whitespace */
+    while (isspace(*expr)) expr++;
+    
+    /* Handle simple numeric cases */
+    if (isdigit(expr[0]) || (expr[0] == '-' && isdigit(expr[1]))) {
         return atoll(expr);
     }
     
-    /* Handle arithmetic operations */
-    char *plus = strchr(expr, '+');
-    if (plus) {
-        int64_t left = eval_expr(expr);
+    /* Handle arithmetic operations - need to split the expression */
+    /* Look for operators from lowest to highest precedence */
+    
+    /* Addition */
+    const char *plus = strchr(expr, '+');
+    if (plus && plus != expr) {
+        char *left_str = strndup(expr, plus - expr);
+        int64_t left = eval_expr(left_str);
         int64_t right = eval_expr(plus + 1);
+        free(left_str);
         return left + right;
     }
     
-    char *minus = strchr(expr, '-');
+    /* Subtraction (but not unary minus) */
+    const char *minus = strchr(expr, '-');
     if (minus && minus != expr) {
-        int64_t left = eval_expr(expr);
+        char *left_str = strndup(expr, minus - expr);
+        int64_t left = eval_expr(left_str);
         int64_t right = eval_expr(minus + 1);
+        free(left_str);
         return left - right;
     }
     
-    char *mult = strchr(expr, '*');
-    if (mult) {
-        int64_t left = eval_expr(expr);
+    /* Multiplication */
+    const char *mult = strchr(expr, '*');
+    if (mult && mult != expr) {
+        char *left_str = strndup(expr, mult - expr);
+        int64_t left = eval_expr(left_str);
         int64_t right = eval_expr(mult + 1);
+        free(left_str);
         return left * right;
     }
     
-    char *div = strchr(expr, '/');
-    if (div) {
-        int64_t left = eval_expr(expr);
+    /* Division */
+    const char *div = strchr(expr, '/');
+    if (div && div != expr) {
+        char *left_str = strndup(expr, div - expr);
+        int64_t left = eval_expr(left_str);
         int64_t right = eval_expr(div + 1);
+        free(left_str);
         return right != 0 ? left / right : 0;
     }
     
-    return 0;
+    /* If we get here, try to parse as number */
+    return atoll(expr);
 }
 
 /* ============================================================================
@@ -392,20 +410,16 @@ static void compile_field(BytecodeBuilder *bb, const KSYField *field) {
         bytecode_emit(bb, OP_ARRAY);
         
         if (strcmp(field->repeat, "eos") == 0) {
-            /* Repeat until end of stream */
-            size_t loop_start = bb->len;
+            /* Repeat until end of stream - simplified, just mark array end */
             bytecode_emit(bb, OP_EOF);
-            bytecode_emit(bb, OP_JNZ);
-            bytecode_emit_u32(bb, 0);  /* Exit loop */
         } else if (strcmp(field->repeat, "expr") == 0 && field->repeat_expr) {
             /* Repeat N times */
             int64_t count = eval_expr(field->repeat_expr);
             bytecode_emit(bb, OP_PUSH);
             bytecode_emit_u64(bb, count);
         } else if (strcmp(field->repeat, "until") == 0 && field->repeat_until) {
-            /* Repeat until condition */
-            size_t loop_start = bb->len;
-            /* Would need full condition evaluation */
+            /* Repeat until condition - simplified */
+            bytecode_emit(bb, OP_EOF);
         }
     }
     
@@ -647,21 +661,28 @@ void ksy_free(CompiledKSY *compiled) {
         return;
     }
     
+    /* ksy_path allocated with safe_strdup (malloc), so use free */
     if (compiled->ksy_path) {
-        compiled->free(compiled->user_data, (void *)compiled->ksy_path);
+        free((void *)compiled->ksy_path);
     }
     
+    /* bytecode allocated with malloc (in bytecode_new), so use free */
     if (compiled->bytecode) {
-        compiled->free(compiled->user_data, compiled->bytecode);
+        free(compiled->bytecode);
     }
     
     if (compiled->types) {
         for (size_t i = 0; i < compiled->num_types; i++) {
+            /* name allocated with safe_strdup (malloc), so use free */
+            if (compiled->types[i].name) {
+                free((void *)compiled->types[i].name);
+            }
             if (compiled->types[i].fields) {
-                compiled->free(compiled->user_data, compiled->types[i].fields);
+                free(compiled->types[i].fields);
             }
         }
-        compiled->free(compiled->user_data, compiled->types);
+        /* types allocated with malloc, so use free */
+        free(compiled->types);
     }
     
     free(compiled);

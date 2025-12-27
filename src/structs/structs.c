@@ -61,43 +61,47 @@ static bool host_is_big_endian(void) {
 
 /* Read with endian conversion */
 static uint16_t read_u16(const uint8_t *data, Endianness endian) {
-    uint16_t v = (uint16_t)data[0] | ((uint16_t)data[1] << 8);
-    if (endian == ENDIAN_BIG && !host_is_big_endian()) {
-        v = swap16(v);
-    } else if (endian == ENDIAN_LITTLE && host_is_big_endian()) {
-        v = swap16(v);
+    if (endian == ENDIAN_LITTLE) {
+        return (uint16_t)data[0] | ((uint16_t)data[1] << 8);
+    } else { /* ENDIAN_BIG */
+        return ((uint16_t)data[0] << 8) | (uint16_t)data[1];
     }
-    return v;
 }
 
 static uint32_t read_u32(const uint8_t *data, Endianness endian) {
-    uint32_t v = (uint32_t)data[0] |
-                 ((uint32_t)data[1] << 8) |
-                 ((uint32_t)data[2] << 16) |
-                 ((uint32_t)data[3] << 24);
-    if (endian == ENDIAN_BIG && !host_is_big_endian()) {
-        v = swap32(v);
-    } else if (endian == ENDIAN_LITTLE && host_is_big_endian()) {
-        v = swap32(v);
+    if (endian == ENDIAN_LITTLE) {
+        return (uint32_t)data[0] |
+               ((uint32_t)data[1] << 8) |
+               ((uint32_t)data[2] << 16) |
+               ((uint32_t)data[3] << 24);
+    } else { /* ENDIAN_BIG */
+        return ((uint32_t)data[0] << 24) |
+               ((uint32_t)data[1] << 16) |
+               ((uint32_t)data[2] << 8)  |
+               (uint32_t)data[3];
     }
-    return v;
 }
 
 static uint64_t read_u64(const uint8_t *data, Endianness endian) {
-    uint64_t v = (uint64_t)data[0] |
-                 ((uint64_t)data[1] << 8) |
-                 ((uint64_t)data[2] << 16) |
-                 ((uint64_t)data[3] << 24) |
-                 ((uint64_t)data[4] << 32) |
-                 ((uint64_t)data[5] << 40) |
-                 ((uint64_t)data[6] << 48) |
-                 ((uint64_t)data[7] << 56);
-    if (endian == ENDIAN_BIG && !host_is_big_endian()) {
-        v = swap64(v);
-    } else if (endian == ENDIAN_LITTLE && host_is_big_endian()) {
-        v = swap64(v);
+    if (endian == ENDIAN_LITTLE) {
+        return (uint64_t)data[0] |
+               ((uint64_t)data[1] << 8)  |
+               ((uint64_t)data[2] << 16) |
+               ((uint64_t)data[3] << 24) |
+               ((uint64_t)data[4] << 32) |
+               ((uint64_t)data[5] << 40) |
+               ((uint64_t)data[6] << 48) |
+               ((uint64_t)data[7] << 56);
+    } else { /* ENDIAN_BIG */
+        return ((uint64_t)data[0] << 56) |
+               ((uint64_t)data[1] << 48) |
+               ((uint64_t)data[2] << 40) |
+               ((uint64_t)data[3] << 32) |
+               ((uint64_t)data[4] << 24) |
+               ((uint64_t)data[5] << 16) |
+               ((uint64_t)data[6] << 8)  |
+               (uint64_t)data[7];
     }
-    return v;
 }
 
 /* ============================================================================
